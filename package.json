@@ -1,0 +1,11 @@
+{
+  "name": "unfolding-incremental",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Manifold, an unfolding incremental game about an atlas of small worlds.",
+  "scripts": {
+    "sim": "node sim/run.js",
+    "serve": "python -m http.server 8321"
+  }
+}
