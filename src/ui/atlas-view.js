@@ -1,10 +1,11 @@
-// The Atlas: where pages are folded and starlight is spent.
+// The Atlas: where worlds are folded and starlight is spent.
 import { h, setText, setShown, setClass, setDisabled, confirmBox } from './dom.js';
 import { format, formatDown, formatInt, formatTemp } from '../core/num.js';
 import * as atlas from '../atlas.js';
 import * as cinder from '../worlds/cinder.js';
 import * as tw from '../worlds/tidewater.js';
 import * as grove from '../worlds/grove.js';
+import * as cw from '../worlds/clockwork.js';
 
 const whole = (x) => formatInt(x);
 
@@ -12,42 +13,24 @@ export function buildAtlas(game) {
   const S = () => game.state;
 
   const WORLDS = [
-    {
-      id: 'cinder',
-      name: 'Cinder',
-      mod: cinder,
-      open: () => true,
-      waiting: () => `Cinder isn't shining yet this fold. It starts once the fire passes ${formatTemp(cinder.BAL.endTemp)}, and shines twice as brightly for every ${cinder.BAL.shineStep} degrees past that.`,
-      rule: () => `It shines twice as brightly for every ${cinder.BAL.shineStep} degrees past ${formatTemp(cinder.BAL.endTemp)} the fire has reached this fold.`,
-    },
-    {
-      id: 'tidewater',
-      name: 'Tidewater',
-      mod: tw,
-      open: (s) => atlas.has(s, 'tidewater'),
-      waiting: () => "Tidewater isn't shining yet this fold. It starts once a single tide passes the far strandline.",
-      rule: () => 'It shines twice as brightly every time its best tide this fold grows a hundredfold.',
-    },
-    {
-      id: 'grove',
-      name: 'Grove',
-      mod: grove,
-      open: (s) => atlas.has(s, 'grove'),
-      waiting: () => "Grove isn't shining yet this fold. It starts once the forest reaches the wood beyond the wood.",
-      rule: () => 'It shines twice as brightly every time the biggest the forest has been this fold grows a thousandfold.',
-    },
+    { id: 'cinder', name: 'Cinder', mod: cinder, open: () => true,
+      rule: `Shines at ${formatTemp(cinder.BAL.endTemp)}. Doubles every ${cinder.BAL.shineStep}°C past that.` },
+    { id: 'tidewater', name: 'Tidewater', mod: tw, open: (s) => atlas.has(s, 'tidewater'),
+      rule: 'Shines at the last strandline. Doubles every 100× best tide.' },
+    { id: 'grove', name: 'Grove', mod: grove, open: (s) => atlas.has(s, 'grove'),
+      rule: 'Shines at the last stand. Doubles every 1,000× forest size.' },
+    { id: 'clockwork', name: 'Clockwork', mod: cw, open: (s) => atlas.has(s, 'clockwork'),
+      rule: 'Shines at Midnight. Doubles every 1,000× ticks per second.' },
   ];
 
   function tryFold(world) {
-    const s = S();
-    const w = s[world.id];
+    const w = S()[world.id];
     if (w.pending.lt(1)) return;
-    const gain = whole(w.pending);
     if (w.folds === 0) {
       confirmBox({
         title: `Fold ${world.name}?`,
-        body: `Folding the page gathers the ${gain} starlight on it and starts ${world.name} over from the very beginning. Starlight, and everything you draw on the Atlas with it, is never lost. No other page is touched.`,
-        yes: 'Fold the page',
+        body: `Resets ${world.name} completely. You get ${whole(w.pending)} starlight. Starlight and Atlas upgrades are never lost.`,
+        yes: 'Fold',
         onYes: () => world.mod.fold(S()),
       });
       return;
@@ -60,10 +43,10 @@ export function buildAtlas(game) {
 
   const worldBoxes = WORLDS.map((world) => {
     const text = h('p', { class: 'desc' });
-    const rule = h('p', { class: 'note' });
     const btn = h('button', { class: 'act primary', onclick: () => tryFold(world) });
-    const el = h('div', { class: 'box' }, h('h3', {}, world.name), text, rule, h('div', { class: 'row', style: 'margin-top: 10px' }, btn));
-    return { world, el, text, rule, btn };
+    const el = h('div', { class: 'box' }, h('h3', {}, world.name), text, h('p', { class: 'note' }, world.rule),
+      h('div', { class: 'row', style: 'margin-top: 10px' }, btn));
+    return { world, el, text, btn };
   });
 
   const groups = atlas.GROUPS.map((g) => {
@@ -79,16 +62,15 @@ export function buildAtlas(game) {
     return { g, el, nodes };
   });
 
-  const groveNotice = h('div', { class: 'notice' },
-    h('h3', {}, 'The fourth page'),
-    h('p', {}, "You've unfolded it, and it's blank. Clockwork hasn't been drawn yet."),
-    h('p', {}, 'This is as far as the game goes for now. Your save will carry over when there is more.'));
+  const endNotice = h('div', { class: 'notice' },
+    h('h3', {}, 'Hollow'),
+    h('p', {}, 'Not built yet. This is the end of the game for now.'));
 
   const el = h('section', { class: 'panel star-accent' },
     h('div', { class: 'figure' }, starAmount, h('small', {}, 'starlight')),
     starTotal,
-    h('p', { class: 'lead' }, 'A world that has been pushed far enough starts to shine, and the page it is drawn on slowly gathers starlight. Folding a page collects what it has gathered and starts that one world over. What you draw here with starlight stays.'),
-    groveNotice,
+    h('p', { class: 'lead' }, 'A world that shines gathers starlight. Folding a world collects it and resets that world only.'),
+    endNotice,
     worldBoxes.map((b) => b.el),
     groups.map((g) => g.el));
 
@@ -96,8 +78,8 @@ export function buildAtlas(game) {
     const s = S();
     const a = s.atlas;
     setText(starAmount, whole(a.starlight));
-    setText(starTotal, a.total.gt(0) ? `You've gathered ${whole(a.total)} starlight in all.` : "You haven't gathered any starlight yet.");
-    setShown(groveNotice, atlas.has(s, 'clockwork'));
+    setText(starTotal, `Gathered ${whole(a.total)} starlight in total.`);
+    setShown(endNotice, atlas.has(s, 'hollow'));
 
     for (const b of worldBoxes) {
       const open = b.world.open(s);
@@ -105,13 +87,8 @@ export function buildAtlas(game) {
       if (!open) continue;
       const w = s[b.world.id];
       const d = b.world.mod.calc(s);
-      if (d.shine > 0) {
-        setText(b.text, `${b.world.name} is giving off ${format(d.shine, 2)} starlight a minute, and the page has gathered ${formatDown(w.pending)} since it was last folded.`);
-        setText(b.rule, b.world.rule());
-      } else {
-        setText(b.text, b.world.waiting());
-        setText(b.rule, w.pending.gte(1) ? `The page still has ${formatDown(w.pending)} starlight on it.` : '');
-      }
+      if (d.shine > 0) setText(b.text, `${format(d.shine, 2)} starlight per minute. ${formatDown(w.pending)} gathered since the last fold.`);
+      else setText(b.text, w.pending.gte(1) ? `Not shining this fold. ${formatDown(w.pending)} gathered.` : 'Not shining this fold.');
       const ready = w.pending.gte(1);
       setText(b.btn, ready ? `Fold ${b.world.name} for ${whole(w.pending)} starlight` : `Fold ${b.world.name}`);
       setDisabled(b.btn, !ready);
@@ -128,7 +105,7 @@ export function buildAtlas(game) {
         setClass(k.el, 'owned', has);
         setClass(k.el, 'can', can);
         setClass(k.el, 'cant', !has && !can);
-        setText(k.cost, has ? 'Drawn' : `Costs ${whole(k.n.cost)} starlight`);
+        setText(k.cost, has ? 'Bought' : `${whole(k.n.cost)} starlight`);
       }
       setShown(g.el, any);
     }

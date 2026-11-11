@@ -5,6 +5,7 @@ import * as atlas from './atlas.js';
 import * as cinder from './worlds/cinder.js';
 import * as tidewater from './worlds/tidewater.js';
 import * as grove from './worlds/grove.js';
+import * as clockwork from './worlds/clockwork.js';
 
 export function newState(now = Date.now()) {
   return {
@@ -20,12 +21,14 @@ export function newState(now = Date.now()) {
       cinderTab: 'fire',
       tidewaterTab: 'shore',
       groveTab: 'wood',
+      clockworkTab: 'train',
       visited: {},
     },
     atlas: atlas.defaults(),
     cinder: cinder.defaults(),
     tidewater: tidewater.defaults(),
     grove: grove.defaults(),
+    clockwork: clockwork.defaults(),
   };
 }
 
@@ -43,6 +46,7 @@ export function tick(state, dt) {
   cinder.tick(state, dt);
   tidewater.tick(state, dt);
   grove.tick(state, dt);
+  clockwork.tick(state, dt);
   if (state.cinder.done) state.atlas.seen = true;
 }
 

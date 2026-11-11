@@ -53,6 +53,11 @@ export const BAL = {
   lensMult: 10,
   passiveAshPerSecond: 0.02,
 
+  // The damper trades heat against ash. Fully open multiplies heat by
+  // damperHeat and divides ash by damperAsh; fully shut does the reverse.
+  damperHeat: 4,
+  damperAsh: 16,
+
   endTemp: 5500,
 
   // Past endTemp the world shines. Starlight per minute doubles every shineStep degrees.
@@ -65,57 +70,57 @@ export const FEED_NAMES = { kindling: 'Kindling', bellows: 'Bellows', flue: 'Flu
 export const FEED_ORDER = ['flue', 'bellows', 'kindling'];
 
 export const IGNITIONS = [
-  { id: 'damp', temp: 100, name: 'The damp burns off', text: 'The wood is dry enough to work with. You can use bellows now.' },
-  { id: 'paper', temp: 233, name: 'Paper catches', text: 'Kindling gives twice as much heat.' },
-  { id: 'logs', temp: 300, name: 'The logs take', text: "The fire is properly going and gives off twice the heat. It's worth building a flue for now." },
-  { id: 'charcoal', temp: 450, name: 'Charcoal glows', text: 'The fire is hot enough to leave good ash behind. You can burn it down.' },
-  { id: 'coal', temp: 600, name: 'Coal catches', text: "Every ignition point you've passed this burn multiplies heat by 1.5, this one included." },
-  { id: 'red', temp: 800, name: 'Red heat', text: 'Each bellows makes your kindling 10% better.' },
-  { id: 'copper', temp: 1085, name: 'Copper melts', text: 'You get twice as much ash from burning down.' },
-  { id: 'yellow', temp: 1300, name: 'Yellow heat', text: 'Each flue section strengthens your bellows by 7% instead of 5%.' },
-  { id: 'iron', temp: 1538, name: 'Iron melts', text: 'The hotter the fire has burned, the more ash it leaves.' },
-  { id: 'sand', temp: 1700, name: 'Sand melts', text: "You can smelt what's in the hearth into glass." },
-  { id: 'white', temp: 2200, name: 'White heat', text: 'The fire starts to feed itself. Heat is multiplied by its peak temperature this burn, counted in hundreds of degrees.' },
-  { id: 'brick', temp: 2800, name: 'Firebrick softens', text: 'You get twice as much glass from smelting.' },
-  { id: 'tungsten', temp: 3422, name: 'Tungsten melts', text: 'Even the embers burn hotter. The ember bed builds up faster still.' },
-  { id: 'sun', temp: 5500, name: 'As hot as the face of the sun', text: 'The edge of the map starts to curl.' },
+  { id: 'damp', temp: 100, name: 'The damp burns off', text: "Unlocks bellows." },
+  { id: 'paper', temp: 233, name: 'Paper catches', text: "Kindling gives 2× heat." },
+  { id: 'logs', temp: 300, name: 'The logs take', text: "Heat ×2. Unlocks the flue." },
+  { id: 'charcoal', temp: 450, name: 'Charcoal glows', text: "Unlocks burning down for ash." },
+  { id: 'coal', temp: 600, name: 'Coal catches', text: "Each ignition point passed this burn multiplies heat by 1.5." },
+  { id: 'red', temp: 800, name: 'Red heat', text: "Each bellows makes kindling 10% better." },
+  { id: 'copper', temp: 1085, name: 'Copper melts', text: "Ash gain ×2." },
+  { id: 'yellow', temp: 1300, name: 'Yellow heat', text: "Each flue strengthens your bellows by 7% instead of 5%." },
+  { id: 'iron', temp: 1538, name: 'Iron melts', text: "Ash gain ×(peak temperature / 1,000)²." },
+  { id: 'sand', temp: 1700, name: 'Sand melts', text: "Unlocks smelting for glass." },
+  { id: 'white', temp: 2200, name: 'White heat', text: "Heat ×(peak temperature / 100)." },
+  { id: 'brick', temp: 2800, name: 'Firebrick softens', text: "Glass gain ×2." },
+  { id: 'tungsten', temp: 3422, name: 'Tungsten melts', text: "Ember power +0.25." },
+  { id: 'sun', temp: 5500, name: 'As hot as the face of the sun', text: "Cinder starts to shine." },
 ];
 const IGN_INDEX = Object.fromEntries(IGNITIONS.map((p, i) => [p.id, i]));
 
 export const ASH_UPGRADES = [
-  { id: 'banked', cost: 1, name: 'Banked coals', text: 'The fire never quite goes out. Each burn starts already lit, and all heat is tripled.' },
-  { id: 'dry', cost: 1, name: 'Dry store', text: 'Kindling kept out of the rain gives twice as much heat.' },
-  { id: 'tender', cost: 200, name: 'Fire-tender', text: 'Someone to feed the fire for you. Kindling is added on its own and no longer costs any heat.' },
-  { id: 'hand', cost: 1000, name: 'Bellows-hand', text: 'The bellows are worked for you, and no longer cost any heat.' },
-  { id: 'deep', cost: 2000, name: 'Deep ash bed', text: 'A thicker bed keeps more of the warmth in, so the ash bed does more for the fire.' },
-  { id: 'clamp', cost: 5000, name: 'Charcoal clamp', text: 'Charcoal holds its heat far longer than wood does. The ember bed builds up faster the longer a burn goes on.' },
-  { id: 'sweep', cost: 15000, name: 'Flue-sweep', text: 'Flue sections are built for you, and no longer cost any heat.' },
-  { id: 'hot', cost: 20000, name: 'Hot ashes', text: "You get 30% more ash for every ignition point you've passed this burn." },
-  { id: 'double', cost: 6e5, name: 'Double bellows', text: 'Each bellows multiplies heat by 2.2 instead of 2.' },
-  { id: 'memory', cost: 2e7, name: 'A warm hearth', text: 'The hearth holds its warmth between burns. Each burn starts with the first six ignition points already passed.' },
-  { id: 'clinker', cost: 3e7, name: 'Clinker', text: 'Every flue section you have makes your kindling 25% better.' },
-  { id: 'kiln', cost: 1.2e8, name: 'Firebrick lining', text: 'Bellows stay cheap for four more purchases before their price starts climbing faster.' },
+  { id: 'banked', cost: 1, name: 'Banked coals', text: "Burns start lit. Heat ×3." },
+  { id: 'dry', cost: 1, name: 'Dry store', text: "Kindling gives 2× heat." },
+  { id: 'tender', cost: 200, name: 'Fire-tender', text: "Buys kindling automatically, for free." },
+  { id: 'hand', cost: 1000, name: 'Bellows-hand', text: "Buys bellows automatically, for free." },
+  { id: 'deep', cost: 2000, name: 'Deep ash bed', text: "Ash bed power 0.4 → 0.55." },
+  { id: 'clamp', cost: 5000, name: 'Charcoal clamp', text: "Ember power 1 → 1.25." },
+  { id: 'sweep', cost: 15000, name: 'Flue-sweep', text: "Buys flues automatically, for free." },
+  { id: 'hot', cost: 20000, name: 'Hot ashes', text: "Ash gain +30% per ignition point passed this burn." },
+  { id: 'double', cost: 6e5, name: 'Double bellows', text: "Each bellows multiplies heat by 2.2 instead of 2." },
+  { id: 'memory', cost: 2e7, name: 'A warm hearth', text: "Burns start with the first 6 ignition points passed." },
+  { id: 'clinker', cost: 3e7, name: 'Clinker', text: "Each flue makes kindling 25% better." },
+  { id: 'kiln', cost: 1.2e8, name: 'Firebrick lining', text: "Bellows cost scaling starts 4 purchases later." },
 ];
 const ASH_BY_ID = Object.fromEntries(ASH_UPGRADES.map((u) => [u.id, u]));
 const MEMORY_POINTS = 6;
 const KEPT_BY_GLASS = ['banked', 'tender', 'hand', 'sweep'];
 
 export const GLASS_UPGRADES = [
-  { id: 'lens', cost: 50, name: 'Burning lens', text: 'A lens gathers the heat to a point. All heat is multiplied by 10.' },
-  { id: 'anneal', cost: 300, name: 'Annealing oven', text: 'Each flue section strengthens your bellows by another 2%.' },
-  { id: 'cullet', cost: 3000, name: 'Cullet', text: 'Broken glass thrown back into the pot helps the melt along. Glass clears twice as fast.' },
-  { id: 'blown', cost: 8000, name: 'Blown glass', text: 'You get ten times as much ash from burning down.' },
-  { id: 'crucible', cost: 30000, name: 'Crucible', text: 'Bellows stay cheap for three more purchases before their price starts climbing faster.' },
-  { id: 'mirror', cost: 150000, name: 'Mirrored hearth', text: 'Glass behind the fire throws its warmth back in. The ember bed builds three times as fast.' },
-  { id: 'prism', cost: 400000, name: 'Prism', text: 'Ignition points multiply heat by 2 each instead of 1.5.' },
-  { id: 'chimney', cost: 1.5e6, name: 'Glass chimney', text: 'Flue sections stay cheap for two more purchases before their price starts climbing faster.' },
+  { id: 'lens', cost: 50, name: 'Burning lens', text: "Multiplies heat by 10." },
+  { id: 'anneal', cost: 300, name: 'Annealing oven', text: "Each flue strengthens your bellows by +2%." },
+  { id: 'cullet', cost: 3000, name: 'Cullet', text: "Glass clears 2× faster." },
+  { id: 'blown', cost: 8000, name: 'Blown glass', text: "Ash gain ×10." },
+  { id: 'crucible', cost: 30000, name: 'Crucible', text: "Bellows cost scaling starts 3 purchases later." },
+  { id: 'mirror', cost: 150000, name: 'Mirrored hearth', text: "Embers build 3× faster." },
+  { id: 'prism', cost: 400000, name: 'Prism', text: "Ignition points multiply heat by 2 instead of 1.5." },
+  { id: 'chimney', cost: 1.5e6, name: 'Glass chimney', text: "Flue cost scaling starts 2 purchases later." },
 ];
 const GLASS_BY_ID = Object.fromEntries(GLASS_UPGRADES.map((u) => [u.id, u]));
 
 export const GLASS_MILESTONES = [
-  { id: 'keepers', need: 1, text: 'Your banked coals, fire-tender, bellows-hand and flue-sweep stay with you through a smelt.' },
-  { id: 'shed', need: 150, text: 'The fire sheds ash as it burns. Every second you gain 2% of what burning down would give you.' },
-  { id: 'keepall', need: 1000, text: 'You keep every Ash upgrade when you smelt.' },
+  { id: 'keepers', need: 1, text: "Keep banked coals, fire-tender, bellows-hand and flue-sweep when you smelt." },
+  { id: 'shed', need: 150, text: "Gain 2% of your burn-down ash every second." },
+  { id: 'keepall', need: 1000, text: "Keep all Ash upgrades when you smelt." },
 ];
 
 // ---------------------------------------------------------------------------
@@ -141,6 +146,7 @@ export function defaults() {
     smelts: 0,
     smeltTime: 0,
     glassUp: {},
+    damper: 0, // -1 is shut, 0 is half open, 1 is wide open
     seen: {}, // things that stay visible once you've found them
     done: false,
     pending: D(0), // starlight given off since the last fold
@@ -236,10 +242,12 @@ export function calc(state) {
   let rate = D(0);
   if (c.lit) {
     rate = D(base).mul(bellowsMult).mul(ignitionMult).mul(ashBed).mul(glassHeat).mul(embers).mul(selfFeed);
+    if (c.damper) rate = rate.mul(Math.pow(BAL.damperHeat, c.damper));
     if (A.banked) rate = rate.mul(3);
     if (N.c_star) rate = rate.mul(state.atlas.total.add(1));
     if (N.r_drift) rate = rate.mul(state.tidewater.totalDriftwood.add(1).sqrt());
     if (N.r_timber) rate = rate.mul(Math.pow(1 + state.grove.foldBestTrees.add(1).log10().toNumber(), 2));
+    if (N.r_works) rate = rate.mul(1 + state.clockwork.foldBestRate.add(1).log10().toNumber());
     if (passed('logs')) rate = rate.mul(2);
     if (G.lens) rate = rate.mul(BAL.lensMult);
   }
@@ -252,6 +260,7 @@ export function calc(state) {
   if (A.hot) ashMult = ashMult.mul(Math.pow(BAL.hotAshesPerPoint, points));
   if (passed('iron')) ashMult = ashMult.mul(Math.pow(c.peakTemp / 1000, 2));
   if (G.blown) ashMult = ashMult.mul(10);
+  if (c.damper) ashMult = ashMult.mul(Math.pow(BAL.damperAsh, -c.damper));
   const canBurn = passed('charcoal') && c.burnHeat.gte(BAL.ashNeedsHeat);
   const ashGain = canBurn ? c.burnHeat.div(BAL.ashNeedsHeat).pow(BAL.ashRoot).mul(ashMult).floor() : D(0);
 
@@ -281,6 +290,12 @@ export function calc(state) {
 // ---------------------------------------------------------------------------
 // Things the player can do
 // ---------------------------------------------------------------------------
+
+export function setDamper(state, value) {
+  const c = state.cinder;
+  if (!c.seen.ash) return;
+  c.damper = Math.max(-1, Math.min(1, value));
+}
 
 export function strike(state) {
   const c = state.cinder;
@@ -397,6 +412,7 @@ export function fold(state) {
   emit('fold', { world: 'cinder', gain: gained, time: c.foldTime });
   const fresh = defaults();
   fresh.seen = c.seen;
+  fresh.damper = c.damper;
   fresh.bestTemp = c.bestTemp;
   fresh.bestPoints = c.bestPoints;
   fresh.done = c.done;

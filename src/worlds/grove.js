@@ -61,54 +61,54 @@ export const BAL = {
 
 // A stand is reached the first time the forest holds that many trees.
 export const STANDS = [
-  { id: 'thicket', trees: 1200, name: 'A thicket', text: 'The roots find their way. Sap sent to the roots goes twice as far.' },
-  { id: 'closed', trees: 2e4, name: 'The canopy closes', text: 'The forest starts to age. Whenever it is at least nine tenths full it grows older, and an old forest makes richer sap.' },
-  { id: 'flower', trees: 6e5, name: 'First flowering', text: 'You can send sap to seed, and let the forest fall when the seed is set.' },
-  { id: 'under', trees: 3e8, name: 'An understory', text: "Every stand you've reached this generation makes the sap half again as rich, this one included." },
-  { id: 'deer', trees: 1.5e12, name: 'Deer paths', text: 'Sap sent to the canopy goes three times as far.' },
-  { id: 'owl', trees: 4e14, name: 'Owls move in', text: 'The forest sets twice as much seed.' },
-  { id: 'lichen', trees: 5e16, name: 'Lichen on the bark', text: 'The forest ages twice as fast.' },
-  { id: 'dead', trees: 4e23, name: 'Deadwood', text: "There's enough dry timber lying about for a fire to take. You can let one through." },
-  { id: 'giant', trees: 8e29, name: 'Giants', text: 'Big trees shelter the small ones. Deeper roots slow the forest down less than they did.' },
-  { id: 'mother', trees: 1e32, name: 'Mother trees', text: 'Sap sent to seed goes three times as far.' },
-  { id: 'far', trees: 5e33, name: 'The wood beyond the wood', text: 'There are trees here that were never planted. The page begins to shine.' },
+  { id: 'thicket', trees: 1200, name: 'A thicket', text: "Sap sent to roots counts double." },
+  { id: 'closed', trees: 2e4, name: 'The canopy closes', text: "Unlocks age. The forest ages while at least 90% full, and age multiplies sap." },
+  { id: 'flower', trees: 6e5, name: 'First flowering', text: "Unlocks seed and seedfall." },
+  { id: 'under', trees: 3e8, name: 'An understory', text: "Each stand reached this generation multiplies sap by 1.5." },
+  { id: 'deer', trees: 1.5e12, name: 'Deer paths', text: "Sap sent to canopy counts triple." },
+  { id: 'owl', trees: 4e14, name: 'Owls move in', text: "Seed set ×2." },
+  { id: 'lichen', trees: 5e16, name: 'Lichen on the bark', text: "The forest ages 2× faster." },
+  { id: 'dead', trees: 4e23, name: 'Deadwood', text: "Unlocks fire for loam." },
+  { id: 'giant', trees: 8e29, name: 'Giants', text: "Each root level slows the forest by 15% instead of 20%." },
+  { id: 'mother', trees: 1e32, name: 'Mother trees', text: "Seed set ×3." },
+  { id: 'far', trees: 5e33, name: 'The wood beyond the wood', text: "Grove starts to shine." },
 ];
 const STAND_INDEX = Object.fromEntries(STANDS.map((p, i) => [p.id, i]));
 const MEMORY_STANDS = 5;
 
 export const SEED_UPGRADES = [
-  { id: 'nursery', cost: 1, name: 'Nursery', text: 'Each generation is raised from stronger stock. All sap is tripled.' },
-  { id: 'mulch', cost: 1, name: 'Leaf mulch', text: 'Sap sent to the roots goes three times as far.' },
-  { id: 'deep', cost: 1, name: 'Seed bank', text: 'Seed lying in the ground does more for the forest that grows over it.' },
-  { id: 'mast', cost: 2, name: 'Mast years', text: 'The forest sets three times as much seed.' },
-  { id: 'forester', cost: 50, name: 'Forester', text: 'Someone to watch the balance. Sap is split between roots and canopy for you, so the forest stays close to full.' },
-  { id: 'veteran', cost: 2500, name: 'Veteran trees', text: 'Age does more for the sap the older the forest gets.' },
-  { id: 'saplings', cost: 3e5, name: 'Saplings', text: 'Each generation starts with eight levels of roots and canopy already grown.' },
-  { id: 'taproot', cost: 6e6, name: 'Taproots', text: 'Roots stay easy to grow for four more levels before they start getting harder.' },
-  { id: 'broadleaf', cost: 1.5e8, name: 'Broad leaves', text: 'Each level of canopy speeds the forest up by 65% instead of 50%.' },
-  { id: 'memory', cost: 1.5e9, name: 'Seed memory', text: 'The forest remembers its shape. Each generation starts with the first five stands already reached.' },
-  { id: 'humus', cost: 8e9, name: 'Humus', text: 'Fallen leaves feed the ground. Every level of canopy makes the sap 10% richer.' },
-  { id: 'crown', cost: 8e11, name: 'Crown shyness', text: 'Trees that leave each other room. Each level of roots multiplies the room by 2.15 instead of 2.' },
+  { id: 'nursery', cost: 1, name: 'Nursery', text: "Sap ×3." },
+  { id: 'mulch', cost: 1, name: 'Leaf mulch', text: "Sap sent to roots counts triple." },
+  { id: 'deep', cost: 1, name: 'Seed bank', text: "Seed power 0.5 → 0.7." },
+  { id: 'mast', cost: 2, name: 'Mast years', text: "Seed set ×3." },
+  { id: 'forester', cost: 50, name: 'Forester', text: "Splits sap between roots and canopy automatically." },
+  { id: 'veteran', cost: 2500, name: 'Veteran trees', text: "Age power 1 → 1.5." },
+  { id: 'saplings', cost: 3e5, name: 'Saplings', text: "Generations start with 8 root and canopy levels." },
+  { id: 'taproot', cost: 6e6, name: 'Taproots', text: "Root cost scaling starts 4 levels later." },
+  { id: 'broadleaf', cost: 1.5e8, name: 'Broad leaves', text: "Each canopy level speeds growth by 65% instead of 50%." },
+  { id: 'memory', cost: 1.5e9, name: 'Seed memory', text: "Generations start with the first 5 stands reached." },
+  { id: 'humus', cost: 8e9, name: 'Humus', text: "Each canopy level multiplies sap by 1.1." },
+  { id: 'crown', cost: 8e11, name: 'Crown shyness', text: "Each root level multiplies room by 2.15 instead of 2." },
 ];
 const SEED_BY_ID = Object.fromEntries(SEED_UPGRADES.map((u) => [u.id, u]));
 const KEPT_BY_LOAM = ['nursery', 'mulch', 'forester'];
 
 export const LOAM_UPGRADES = [
-  { id: 'ashbed', cost: 50, name: 'Ash bed', text: 'What the fire leaves is good for growing in. All sap is multiplied by 10.' },
-  { id: 'fireweed', cost: 5e4, name: 'Fireweed', text: 'The first thing back after a fire. The forest sets ten times as much seed.' },
-  { id: 'clearing', cost: 1.2e5, name: 'Clearings', text: 'Open ground settles faster. Loam builds up twice as fast.' },
-  { id: 'serotiny', cost: 4e5, name: 'Fire cones', text: 'Cones that only open in the heat. The forest ages three times as fast.' },
-  { id: 'deeproot', cost: 1.2e6, name: 'Deep soil', text: 'Roots stay easy to grow for three more levels before they start getting harder.' },
-  { id: 'pioneer', cost: 3e6, name: 'Pioneers', text: 'Canopy stays easy to grow for three more levels before it starts getting harder.' },
-  { id: 'sun', cost: 5e6, name: 'Sunlit floor', text: 'Stands make the sap twice as rich each instead of half again.' },
-  { id: 'charcoal', cost: 1.5e7, name: 'Charcoal in the ground', text: 'Sap sent to the canopy goes five times as far.' },
+  { id: 'ashbed', cost: 50, name: 'Ash bed', text: "Sap ×10." },
+  { id: 'fireweed', cost: 5e4, name: 'Fireweed', text: "Seed set ×10." },
+  { id: 'clearing', cost: 1.2e5, name: 'Clearings', text: "Loam builds 2× faster." },
+  { id: 'serotiny', cost: 4e5, name: 'Fire cones', text: "The forest ages 3× faster." },
+  { id: 'deeproot', cost: 1.2e6, name: 'Deep soil', text: "Root cost scaling starts 3 levels later." },
+  { id: 'pioneer', cost: 3e6, name: 'Pioneers', text: "Canopy cost scaling starts 3 levels later." },
+  { id: 'sun', cost: 5e6, name: 'Sunlit floor', text: "Stands multiply sap by 2 instead of 1.5." },
+  { id: 'charcoal', cost: 1.5e7, name: 'Charcoal in the ground', text: "Sap sent to canopy counts 5×." },
 ];
 const LOAM_BY_ID = Object.fromEntries(LOAM_UPGRADES.map((u) => [u.id, u]));
 
 export const LOAM_MILESTONES = [
-  { id: 'keepers', need: 1, text: 'Your nursery, leaf mulch and forester come through a fire.' },
-  { id: 'rain', need: 1e4, text: 'Seed falls all year round. Every second you gain 2% of what letting the forest fall would give you.' },
-  { id: 'keepall', need: 2e5, text: 'Every Seed upgrade comes through a fire.' },
+  { id: 'keepers', need: 1, text: "Keep nursery, leaf mulch and forester through a fire." },
+  { id: 'rain', need: 1e4, text: "Gain 2% of your seedfall seeds every second." },
+  { id: 'keepall', need: 2e5, text: "Keep all Seed upgrades through a fire." },
 ];
 
 // ---------------------------------------------------------------------------
@@ -253,6 +253,7 @@ export function calc(state) {
   if (N.g_star) richness = richness.mul(g.given.add(1));
   if (N.r_ash) richness = richness.mul(Math.max(1, state.cinder.foldBest / 1000));
   if (N.r_mist) richness = richness.mul(1 + state.tidewater.foldBestTide.add(1).log10().toNumber());
+  if (N.r_works) richness = richness.mul(1 + state.clockwork.foldBestRate.add(1).log10().toNumber());
   const sap = g.trees.mul(richness);
 
   const rootsShare = (1 - g.seedShare) * (1 - g.canopySplit);

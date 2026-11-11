@@ -60,7 +60,7 @@ export function toast(title, body = '') {
   setTimeout(() => el.remove(), 7500);
 }
 
-export function confirmBox({ title, body, yes, no = 'Not yet', danger = false, onYes }) {
+export function confirmBox({ title, body, yes, no = 'Cancel', danger = false, onYes }) {
   const root = document.getElementById('modal-root');
   const close = () => back.remove();
   const yesBtn = h('button', { class: 'act ' + (danger ? 'danger' : 'primary'), onclick: () => { close(); onYes(); } }, yes);

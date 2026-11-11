@@ -6,6 +6,7 @@
 //   node sim/calibrate.js cinder      Ash and Glass upgrade costs
 //   node sim/calibrate.js tidewater   strandlines and Driftwood upgrade costs
 //   node sim/calibrate.js grove       stands, and Seed and Loam upgrade costs
+//   node sim/calibrate.js clockwork   chimes and Spring upgrade costs
 //
 // Add --timeline to print the playthrough the result produces. Nothing is
 // written to the game files; copy the numbers across by hand.
@@ -16,6 +17,7 @@ import { formatTime } from '../src/core/num.js';
 import * as cinder from '../src/worlds/cinder.js';
 import * as tw from '../src/worlds/tidewater.js';
 import * as grove from '../src/worlds/grove.js';
+import * as cw from '../src/worlds/clockwork.js';
 import { simulate } from './bot.js';
 
 const NICE = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
@@ -98,7 +100,21 @@ if (which === 'grove') {
   tune(items, sim);
 }
 
+if (which === 'clockwork') {
+  // Minutes after Clockwork is first unfolded, played on its own with its
+  // needs from other worlds waived.
+  cw.BAL.ignoreNeeds = true;
+  const chimes = { one: 1.5, two: 4, three: 8, four: 13, five: 30, six: 55, seven: 90, eight: 135, midnight: 200 };
+  const spring = { socket5: 18, idler: 24, runin: 31, esc: 39, socket6: 48, worm: 60, socket7: 75, jewels: 95, pinion: 120, socket8: 150 };
+  sim = { worlds: { clockwork: true }, setup: (s) => { s.atlas.nodes.clockwork = true; }, dt: 0.5 };
+  const items = [];
+  for (const p of cw.CHIMES) items.push({ label: 'chime ' + p.id, target: chimes[p.id], mark: 'chime:' + p.id, obj: p, field: 'rate', group: 'chime' });
+  for (const u of cw.SPRING_UPGRADES) if (spring[u.id]) items.push({ label: 'spring ' + u.id, target: spring[u.id], mark: 'spring:' + u.id, obj: u, field: 'cost', group: 'spring' });
+  items.push({ label: 'springNeedsTicks', target: 14, mark: 'firstRewind', obj: cw.BAL, field: 'springNeedsTicks', group: 'springneed' });
+  tune(items, sim);
+}
+
 if (timeline) {
-  const { lines } = simulate({ ...sim, hours: 12, keepLog: true, until: which === 'tidewater' ? 'line:far' : which === 'grove' ? 'stand:far' : 'end' });
+  const { lines } = simulate({ ...sim, hours: 12, keepLog: true, until: which === 'tidewater' ? 'line:far' : which === 'grove' ? 'stand:far' : which === 'clockwork' ? 'chime:midnight' : 'end' });
   console.log('\n' + lines.join('\n'));
 }

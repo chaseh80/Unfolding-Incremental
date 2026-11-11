@@ -5,42 +5,51 @@ import { D } from './core/num.js';
 import { emit } from './core/events.js';
 
 export const GROUPS = [
-  { id: 'pages', name: 'Pages', text: 'Each page of the atlas is a world of its own.' },
+  { id: 'pages', name: 'Worlds', text: '' },
   { id: 'cinder', name: 'Cinder', text: '' },
   { id: 'tidewater', name: 'Tidewater', text: '' },
   { id: 'grove', name: 'Grove', text: '' },
-  { id: 'routes', name: 'Routes', text: 'Lines drawn between two pages, so that one world can help another.' },
+  { id: 'clockwork', name: 'Clockwork', text: '' },
+  { id: 'routes', name: 'Routes', text: 'Links between worlds.' },
 ];
 
 export const NODES = [
-  { id: 'tidewater', group: 'pages', cost: 1, name: 'Tidewater', text: 'Unfold the second page. A grey shore, and a sea that comes and goes.' },
-  { id: 'grove', group: 'pages', cost: 3000, needs: 'tidewater', name: 'Grove', text: 'Unfold the third page. A clearing in the rain, and one seed.' },
-  { id: 'clockwork', group: 'pages', cost: 6e5, needs: 'grove', name: 'Clockwork', text: 'Unfold the fourth page.' },
+  { id: 'tidewater', group: 'pages', cost: 1, name: 'Tidewater', text: "Unlocks the second world." },
+  { id: 'grove', group: 'pages', cost: 3000, needs: 'tidewater', name: 'Grove', text: "Unlocks the third world." },
+  { id: 'clockwork', group: 'pages', cost: 6e5, needs: 'grove', name: 'Clockwork', text: "Unlocks the fourth world." },
+  { id: 'hollow', group: 'pages', cost: 1.5e9, needs: 'clockwork', name: 'Hollow', text: "Unlocks the fifth world." },
 
-  { id: 'c_hands', group: 'cinder', cost: 2, name: 'Hands that stay', text: 'Your banked coals, fire-tender, bellows-hand and flue-sweep stay on when you fold Cinder.' },
-  { id: 'c_star', group: 'cinder', cost: 2, name: 'Starlit hearth', text: "Cinder's heat is multiplied by all the starlight you have ever gathered, plus one." },
-  { id: 'c_shed', group: 'cinder', cost: 5, name: 'Falling ash', text: "The fire sheds ash from the moment it's lit, so you never have to burn it down." },
-  { id: 'c_keeper', group: 'cinder', cost: 12, name: 'Hearth-keeper', text: 'Ash and Glass upgrades are bought for you the moment you can afford them.' },
-  { id: 'c_glass', group: 'cinder', cost: 60, name: 'Standing glassworks', text: 'Every second you gain 1% of the glass a smelt would give you, without smelting.' },
-  { id: 'c_bright', group: 'cinder', cost: 250, name: 'A brighter fire', text: 'Cinder gives off three times as much starlight.' },
+  { id: 'c_hands', group: 'cinder', cost: 2, name: 'Hands that stay', text: "Keep banked coals, fire-tender, bellows-hand and flue-sweep when you fold Cinder." },
+  { id: 'c_star', group: 'cinder', cost: 2, name: 'Starlit hearth', text: "Heat ×(total starlight + 1)." },
+  { id: 'c_shed', group: 'cinder', cost: 5, name: 'Falling ash', text: "Gain 2% of your burn-down ash every second, from the start." },
+  { id: 'c_keeper', group: 'cinder', cost: 12, name: 'Hearth-keeper', text: "Buys Ash and Glass upgrades automatically." },
+  { id: 'c_glass', group: 'cinder', cost: 60, name: 'Standing glassworks', text: "Gain 1% of your smelt glass every second." },
+  { id: 'c_bright', group: 'cinder', cost: 250, name: 'A brighter fire', text: "Cinder gives 3× starlight." },
 
-  { id: 't_hands', group: 'tidewater', cost: 8, needs: 'tidewater', name: 'Shore hands', text: 'Your channel-cutter, pan-raker, pool-digger, moon-watcher and tide tables stay on when you fold Tidewater.' },
-  { id: 't_star', group: 'tidewater', cost: 10, needs: 'tidewater', name: 'Starlit shore', text: "Tidewater's salt is multiplied by all the starlight you have ever gathered, plus one." },
-  { id: 't_storm', group: 'tidewater', cost: 40, needs: 'tidewater', name: 'Rough weather', text: 'Driftwood washes up on its own. Every second you gain 2% of what a storm would leave.' },
-  { id: 't_keeper', group: 'tidewater', cost: 100, needs: 'tidewater', name: 'Beachcomber', text: 'Driftwood upgrades are bought for you the moment you can afford them.' },
-  { id: 't_bright', group: 'tidewater', cost: 500, needs: 'tidewater', name: 'A brighter shore', text: 'Tidewater gives off three times as much starlight.' },
+  { id: 't_hands', group: 'tidewater', cost: 8, needs: 'tidewater', name: 'Shore hands', text: "Keep channel-cutter, pan-raker, pool-digger, moon-watcher and tide tables when you fold Tidewater." },
+  { id: 't_star', group: 'tidewater', cost: 10, needs: 'tidewater', name: 'Starlit shore', text: "Salt ×(total starlight + 1)." },
+  { id: 't_storm', group: 'tidewater', cost: 40, needs: 'tidewater', name: 'Rough weather', text: "Gain 2% of your storm driftwood every second." },
+  { id: 't_keeper', group: 'tidewater', cost: 100, needs: 'tidewater', name: 'Beachcomber', text: "Buys Driftwood upgrades automatically." },
+  { id: 't_bright', group: 'tidewater', cost: 500, needs: 'tidewater', name: 'A brighter shore', text: "Tidewater gives 3× starlight." },
 
-  { id: 'g_hands', group: 'grove', cost: 5e4, needs: 'grove', name: 'Woodland hands', text: 'Your nursery, leaf mulch and forester stay on when you fold Grove.' },
-  { id: 'g_star', group: 'grove', cost: 1e5, needs: 'grove', name: 'Starlit wood', text: "Grove's sap is multiplied by all the starlight Grove itself has ever given you, plus one." },
-  { id: 'g_seed', group: 'grove', cost: 1.5e5, needs: 'grove', name: 'Seed rain', text: 'Seed falls without the forest having to. Every second you gain 2% of what letting it fall would give you.' },
-  { id: 'g_keeper', group: 'grove', cost: 2.5e5, needs: 'grove', name: 'Woodward', text: 'Seed and Loam upgrades are bought for you the moment you can afford them.' },
-  { id: 'g_bright', group: 'grove', cost: 3e5, needs: 'grove', name: 'A brighter wood', text: 'Grove gives off three times as much starlight.' },
+  { id: 'g_hands', group: 'grove', cost: 5e4, needs: 'grove', name: 'Woodland hands', text: "Keep nursery, leaf mulch and forester when you fold Grove." },
+  { id: 'g_star', group: 'grove', cost: 1e5, needs: 'grove', name: 'Starlit wood', text: "Sap ×(starlight gathered from Grove + 1)." },
+  { id: 'g_seed', group: 'grove', cost: 1.5e5, needs: 'grove', name: 'Seed rain', text: "Gain 2% of your seedfall seeds every second." },
+  { id: 'g_keeper', group: 'grove', cost: 2.5e5, needs: 'grove', name: 'Woodward', text: "Buys Seed and Loam upgrades automatically." },
+  { id: 'g_bright', group: 'grove', cost: 3e5, needs: 'grove', name: 'A brighter wood', text: "Grove gives 3× starlight." },
 
-  { id: 'r_drift', group: 'routes', cost: 15, needs: 'tidewater', name: 'Driftwood for the fire', text: "Driftwood burns well. Cinder's heat is multiplied by the square root of all the driftwood Tidewater has washed up this fold." },
-  { id: 'r_sun', group: 'routes', cost: 20, needs: 'tidewater', name: 'Heat on the flats', text: "A hot fire dries the shore. Tidewater's drying is multiplied by the hottest Cinder has burned this fold, counted in thousands of degrees and squared." },
-  { id: 'r_ash', group: 'routes', cost: 3e4, needs: 'grove', name: 'Ash on the roots', text: "Wood ash feeds the ground. Grove's sap is multiplied by the hottest Cinder has burned this fold, counted in thousands of degrees." },
-  { id: 'r_mist', group: 'routes', cost: 1e5, needs: 'grove', name: 'Sea mist', text: "Mist off the shore keeps the wood damp. Grove's sap grows with every power of ten in Tidewater's best tide this fold." },
-  { id: 'r_timber', group: 'routes', cost: 2e5, needs: 'grove', name: 'Timber', text: "The wood has timber to spare. Cinder's heat and Tidewater's salt both grow with every power of ten in the size Grove has reached this fold." },
+  { id: 'k_hands', group: 'clockwork', cost: 5e6, needs: 'clockwork', name: 'Bench hands', text: "Keep apprentice and oil when you fold Clockwork." },
+  { id: 'k_star', group: 'clockwork', cost: 1e7, needs: 'clockwork', name: 'Starlit works', text: "Ticks ×(starlight gathered from Clockwork + 1)." },
+  { id: 'k_spring', group: 'clockwork', cost: 6e7, needs: 'clockwork', name: 'Self-winding', text: "Gain 2% of your rewind springs every second." },
+  { id: 'k_bright', group: 'clockwork', cost: 1.5e8, needs: 'clockwork', name: 'A brighter works', text: "Clockwork gives 3× starlight." },
+
+  { id: 'r_drift', group: 'routes', cost: 15, needs: 'tidewater', name: 'Driftwood for the fire', text: "Cinder's heat ×√(Tidewater's driftwood this fold)." },
+  { id: 'r_sun', group: 'routes', cost: 20, needs: 'tidewater', name: 'Heat on the flats', text: "Tidewater's drying ×(Cinder's best temperature this fold / 1,000)²." },
+  { id: 'r_ash', group: 'routes', cost: 3e4, needs: 'grove', name: 'Ash on the roots', text: "Grove's sap ×(Cinder's best temperature this fold / 1,000)." },
+  { id: 'r_mist', group: 'routes', cost: 1e5, needs: 'grove', name: 'Sea mist', text: "Grove's sap ×(1 + powers of ten in Tidewater's best tide this fold)." },
+  { id: 'r_timber', group: 'routes', cost: 2e5, needs: 'grove', name: 'Timber', text: "Cinder's heat and Tidewater's salt ×(1 + powers of ten in Grove's best size this fold)²." },
+  { id: 'r_parts', group: 'routes', cost: 2e6, needs: 'clockwork', name: 'Parts', text: "Clockwork's ticks ×(Cinder's best temperature this fold / 1,000)." },
+  { id: 'r_works', group: 'routes', cost: 3e7, needs: 'clockwork', name: 'Regulators', text: "Cinder's heat, Tidewater's salt and Grove's sap ×(1 + powers of ten in Clockwork's best ticks per second this fold)." },
 ];
 const BY_ID = Object.fromEntries(NODES.map((n) => [n.id, n]));
 

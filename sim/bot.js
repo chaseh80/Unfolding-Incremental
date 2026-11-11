@@ -8,6 +8,7 @@ import * as atlas from '../src/atlas.js';
 import * as cinder from '../src/worlds/cinder.js';
 import * as tw from '../src/worlds/tidewater.js';
 import * as grove from '../src/worlds/grove.js';
+import * as cw from '../src/worlds/clockwork.js';
 
 function cheapest(list, owned, ok = () => true) {
   let best = null;
@@ -169,6 +170,77 @@ function actGrove(state, every) {
   }
 }
 
+// Try every single change and every swap, keep whatever makes the train
+// worth more, and repeat until nothing helps. A person does much the same by
+// dragging gears about and watching the number.
+function arrangeTrain(state) {
+  const k = state.clockwork;
+  const n = cw.socketCount(k);
+  const kinds = cw.GEARS.map((g) => g.id).filter((id) => cw.gearUnlocked(k, id));
+  const pad = (t) => t.concat(new Array(k.train.length - n).fill(''));
+  const worth = (t) => cw.calc(state, pad(t)).run.product;
+  let train = k.train.slice(0, n).map((t) => (t && cw.gearUnlocked(k, t) ? t : 'brass'));
+  let best = worth(train);
+  for (let pass = 0; pass < 12; pass++) {
+    let improved = false;
+    const consider = (t) => {
+      const w = worth(t);
+      if (w.gt(best.mul(1.0001))) { best = w; train = t; improved = true; }
+    };
+    for (let i = 0; i < n; i++) {
+      for (const id of kinds) {
+        if (train[i] === id) continue;
+        const t = train.slice();
+        if (id !== 'brass') for (let j = 0; j < n; j++) if (t[j] === id) t[j] = 'brass';
+        t[i] = id;
+        consider(t);
+      }
+    }
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        if (train[i] === train[j]) continue;
+        const t = train.slice();
+        [t[i], t[j]] = [t[j], t[i]];
+        consider(t);
+      }
+    }
+    if (!improved) break;
+  }
+  cw.setTrain(state, pad(train));
+}
+
+function actClockwork(state, every, ctx) {
+  if (!state.atlas.nodes.clockwork) return;
+  const k = state.clockwork;
+  if (!k.wound) cw.wind(state);
+  cw.levelAll(state);
+  for (;;) {
+    const u = cheapest(cw.SPRING_UPGRADES, k.springUp, (x) => cw.needMet(state, x) && k.springs.gte(x.cost));
+    if (!u || !cw.buySpringUpgrade(state, u.id)) break;
+  }
+
+  if (shouldFold(state, 'clockwork', every)) { cw.fold(state); return; }
+
+  // Rearranging is the one thing here that is always done by hand, so the
+  // stand-in player only does it now and then, not every few seconds.
+  const shape = cw.socketCount(k) + ':' + cw.GEARS.filter((g) => cw.gearUnlocked(k, g.id)).length;
+  if (ctx.shape !== shape || ctx.time - (ctx.arranged || 0) >= Math.max(60, every)) {
+    arrangeTrain(state);
+    ctx.shape = shape;
+    ctx.arranged = ctx.time;
+  }
+
+  const d = cw.calc(state);
+  const patience = Math.max(30, every);
+  if (d.canRewind && d.springGain.gte(1) && !state.atlas.nodes.k_spring && k.windTime >= patience) {
+    const next = cheapest(cw.SPRING_UPGRADES, k.springUp, (x) => cw.needMet(state, x));
+    const buysNext = next && k.springs.add(d.springGain).gte(next.cost);
+    const bigJump = d.springGain.gte(k.totalSprings.mul(2).max(1));
+    const stalled = k.windTime > 300 && d.springGain.gte(k.totalSprings.mul(0.5));
+    if (buysNext || bigJump || stalled) cw.rewind(state);
+  }
+}
+
 /**
  * every:   how often the player looks at the game and acts, in seconds
  * hours:   give up after this long
@@ -177,13 +249,14 @@ function actGrove(state, every) {
  * worlds:  which worlds the player bothers with
  * dt:      length of one step of game time
  */
-export function simulate({ every = 3, hours = 24, until = null, keepLog = false, setup = null, worlds = { cinder: true, tidewater: true, grove: true }, dt = 0.25 } = {}) {
+export function simulate({ every = 3, hours = 24, until = null, keepLog = false, setup = null, worlds = { cinder: true, tidewater: true, grove: true, clockwork: true }, dt = 0.25 } = {}) {
   drain();
   const state = newState(0);
   if (setup) setup(state);
   dt = Math.min(dt, every);
   const marks = {};
   const lines = [];
+  const ctx = { time: 0 };
   let t = 0;
 
   const log = (text) => {
@@ -191,7 +264,7 @@ export function simulate({ every = 3, hours = 24, until = null, keepLog = false,
     const c = state.cinder;
     const w = state.tidewater;
     lines.push(
-      `${formatTime(t).padStart(9)}  ${text.padEnd(50)} fire ${String(Math.floor(c.peakTemp)).padStart(5)}°C  tide ${format(w.bestTide, 0).padStart(9)}  drift ${format(w.totalDriftwood, 0).padStart(8)}  trees ${format(state.grove.bestTrees, 0).padStart(9)}  star ${format(state.atlas.total, 0)}`
+      `${formatTime(t).padStart(9)}  ${text.padEnd(50)} fire ${String(Math.floor(c.foldBest)).padStart(5)}°C  tide ${format(w.foldBestTide, 0).padStart(9)}  trees ${format(state.grove.foldBestTrees, 0).padStart(9)}  ticks ${format(state.clockwork.foldBestRate, 0).padStart(9)}  star ${format(state.atlas.total, 0)}`
     );
   };
   const mark = (name) => { if (marks[name] === undefined) marks[name] = t; };
@@ -204,6 +277,8 @@ export function simulate({ every = 3, hours = 24, until = null, keepLog = false,
       if (worlds.cinder) actCinder(state, every);
       if (worlds.tidewater) actTidewater(state, every);
       if (worlds.grove) actGrove(state, every);
+      ctx.time = t;
+      if (worlds.clockwork) actClockwork(state, every, ctx);
       nextAct = t + every;
     }
     tick(state, dt);
@@ -226,6 +301,9 @@ export function simulate({ every = 3, hours = 24, until = null, keepLog = false,
       if (e.type === 'seedUpgrade' && marks['seed:' + e.id] === undefined) { log(`seed upgrade: ${e.id}`); mark('seed:' + e.id); }
       if (e.type === 'wildfire' && state.grove.fires === 1) { log(`first fire (+${format(e.gain, 0)} loam)`); mark('firstFire'); }
       if (e.type === 'loamUpgrade' && marks['loam:' + e.id] === undefined) { log(`loam upgrade: ${e.id}`); mark('loam:' + e.id); }
+      if (e.type === 'chime') { log(`chime: ${e.name}`); mark('chime:' + e.id); }
+      if (e.type === 'rewind' && state.clockwork.rewinds === 1) { log(`first rewind (+${format(e.gain, 0)} springs)`); mark('firstRewind'); }
+      if (e.type === 'springUpgrade' && marks['spring:' + e.id] === undefined) { log(`spring upgrade: ${e.id}`); mark('spring:' + e.id); }
       if (e.type === 'fold') { log(`FOLD ${e.world} (+${format(e.gain, 0)} starlight after ${formatTime(e.time)})`); mark(`fold:${e.world}`); }
       if (e.type === 'atlas') { log(`ATLAS: ${e.name}`); mark('atlas:' + e.id); }
     }

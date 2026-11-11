@@ -7,9 +7,11 @@
 //   node sim/snapshot.js 20 tidewater    the same for Tidewater
 import { toExportString } from '../src/core/save.js';
 import { simulate } from './bot.js';
+import * as cw from '../src/worlds/clockwork.js';
 
 const minutes = Number(process.argv[2]) || 60;
 const alone = process.argv[3];
+if (alone === 'clockwork') cw.BAL.ignoreNeeds = true;
 const { state } = simulate({
   every: 3,
   hours: minutes / 60,

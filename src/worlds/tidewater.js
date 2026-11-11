@@ -53,37 +53,37 @@ export const BAL = {
   shineBase: 3,
 };
 
-export const FEED_NAMES = { channel: 'Channels', pan: 'Salt pans', pool: 'Pools', moon: 'The moon' };
+export const FEED_NAMES = { channel: 'Channels', pan: 'Salt pans', pool: 'Pools', moon: 'Moon' };
 export const FEED_ORDER = ['moon', 'pool', 'channel', 'pan'];
 const FEED_FREE = { channel: 'cutter', pan: 'raker', pool: 'digger', moon: 'watcher' };
 
 // A strandline is passed when a single tide leaves that much salt.
 export const STRANDLINES = [
-  { id: 'wrack', salt: 25, name: 'The wrack line', text: 'The sea has started to notice you. You can coax the moon closer.' },
-  { id: 'barnacle', salt: 80, name: 'Barnacle rocks', text: 'Kelp takes hold in the pools. It thickens with every tide and makes the brine richer.' },
-  { id: 'slipway', salt: 600, name: 'The old slipway', text: 'Your channels carry twice as much water.' },
-  { id: 'storm', salt: 8000, name: 'Storm beach', text: 'The shore is worth something to a storm now. You can let one through.' },
-  { id: 'causeway', salt: 2e6, name: 'The causeway', text: "Every strandline you've passed this calm makes the brine half again as rich, this one included." },
-  { id: 'seal', salt: 5e7, name: 'Seal rocks', text: 'Your salt pans dry three times as fast.' },
-  { id: 'wood', salt: 6e8, name: 'The drowned wood', text: 'Storms leave twice as much driftwood.' },
-  { id: 'light', salt: 1e12, name: 'Lighthouse rock', text: 'Kelp thickens twice as fast.' },
-  { id: 'far', salt: 4e12, name: 'The far strandline', text: 'No tide was ever meant to reach this high. The page begins to shine.' },
+  { id: 'wrack', salt: 25, name: 'The wrack line', text: "Unlocks the moon." },
+  { id: 'barnacle', salt: 80, name: 'Barnacle rocks', text: "Unlocks kelp. It grows every tide and multiplies salt." },
+  { id: 'slipway', salt: 600, name: 'The old slipway', text: "Channels ×2." },
+  { id: 'storm', salt: 8000, name: 'Storm beach', text: "Unlocks storms for driftwood." },
+  { id: 'causeway', salt: 2e6, name: 'The causeway', text: "Each strandline passed this calm multiplies salt by 1.5." },
+  { id: 'seal', salt: 5e7, name: 'Seal rocks', text: "Salt pans ×3." },
+  { id: 'wood', salt: 6e8, name: 'The drowned wood', text: "Driftwood gain ×2." },
+  { id: 'light', salt: 1e12, name: 'Lighthouse rock', text: "Kelp grows 2× faster." },
+  { id: 'far', salt: 4e12, name: 'The far strandline', text: "Tidewater starts to shine." },
 ];
 const LINE_INDEX = Object.fromEntries(STRANDLINES.map((p, i) => [p.id, i]));
 
 export const DRIFT_UPGRADES = [
-  { id: 'cutter', cost: 1, name: 'Channel-cutter', text: 'Someone to keep the channels dug. Channels are cut for you and no longer cost any salt.' },
-  { id: 'raker', cost: 1, name: 'Pan-raker', text: 'Salt pans are laid for you and no longer cost any salt.' },
-  { id: 'groynes', cost: 1, name: 'Groynes', text: 'Timber fences keep the shore from washing away. All salt is tripled.' },
-  { id: 'digger', cost: 1, name: 'Pool-digger', text: 'The pools are deepened for you and no longer cost any salt.' },
-  { id: 'tables', cost: 6, name: 'Tide tables', text: 'The sluice is set for you at every turn of the tide, so the pools fill and dry in step.' },
-  { id: 'watcher', cost: 20, name: 'Moon-watcher', text: 'The moon is coaxed closer for you, and no longer costs any salt.' },
-  { id: 'beds', cost: 20, name: 'Kelp beds', text: 'Kelp does more for the brine the thicker it gets.' },
-  { id: 'cuts', cost: 150, name: 'Deep cuts', text: 'Your channels carry three times as much water.' },
-  { id: 'seawall', cost: 150, name: 'Sea wall', text: 'A wall to hold the water in. The pools hold eight times as much.' },
-  { id: 'holdfast', cost: 800, name: 'Holdfasts', text: 'Kelp that grips the rock. A storm only tears out two thirds of it.' },
-  { id: 'flats', cost: 1500, name: 'Wide flats', text: 'Your salt pans dry three times as fast.' },
-  { id: 'pull', cost: 25000, name: 'A heavier moon', text: 'Each step closer multiplies the tides by 1.75 instead of 1.6.' },
+  { id: 'cutter', cost: 1, name: 'Channel-cutter', text: "Buys channels automatically, for free." },
+  { id: 'raker', cost: 1, name: 'Pan-raker', text: "Buys salt pans automatically, for free." },
+  { id: 'groynes', cost: 1, name: 'Groynes', text: "Salt ×3." },
+  { id: 'digger', cost: 1, name: 'Pool-digger', text: "Buys pools automatically, for free." },
+  { id: 'tables', cost: 6, name: 'Tide tables', text: "Sets the sluice automatically every tide." },
+  { id: 'watcher', cost: 20, name: 'Moon-watcher', text: "Buys the moon automatically, for free." },
+  { id: 'beds', cost: 20, name: 'Kelp beds', text: "Kelp power 1 → 1.5." },
+  { id: 'cuts', cost: 150, name: 'Deep cuts', text: "Channels ×3." },
+  { id: 'seawall', cost: 150, name: 'Sea wall', text: "Pools hold 8× as much." },
+  { id: 'holdfast', cost: 800, name: 'Holdfasts', text: "Storms only remove two thirds of your kelp." },
+  { id: 'flats', cost: 1500, name: 'Wide flats', text: "Salt pans ×3." },
+  { id: 'pull', cost: 25000, name: 'A heavier moon', text: "Each moon level multiplies tides by 1.75 instead of 1.6." },
 ];
 const DRIFT_BY_ID = Object.fromEntries(DRIFT_UPGRADES.map((u) => [u.id, u]));
 const KEPT_BY_ATLAS = ['cutter', 'raker', 'digger', 'watcher', 'tables'];
@@ -200,6 +200,7 @@ export function calc(state) {
   if (U.groynes) strength = strength.mul(3);
   if (N.t_star) strength = strength.mul(state.atlas.total.add(1));
   if (N.r_timber) strength = strength.mul(Math.pow(1 + state.grove.foldBestTrees.add(1).log10().toNumber(), 2));
+  if (N.r_works) strength = strength.mul(1 + state.clockwork.foldBestRate.add(1).log10().toNumber());
 
   const high = t.gate * t.period;
   const low = t.period - high;
