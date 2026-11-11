@@ -7,6 +7,7 @@ import { D, format, formatTime } from '../src/core/num.js';
 import * as atlas from '../src/atlas.js';
 import * as cinder from '../src/worlds/cinder.js';
 import * as tw from '../src/worlds/tidewater.js';
+import * as grove from '../src/worlds/grove.js';
 
 function cheapest(list, owned, ok = () => true) {
   let best = null;
@@ -120,6 +121,54 @@ function actTidewater(state, every) {
   }
 }
 
+function actGrove(state, every) {
+  if (!state.atlas.nodes.grove) return;
+  const g = state.grove;
+  if (!g.planted) grove.plant(state);
+  for (let u = cheapest(grove.SEED_UPGRADES, g.seedUp); u && grove.buySeedUpgrade(state, u.id); u = cheapest(grove.SEED_UPGRADES, g.seedUp));
+  for (let u = cheapest(grove.LOAM_UPGRADES, g.loamUp); u && grove.buyLoamUpgrade(state, u.id); u = cheapest(grove.LOAM_UPGRADES, g.loamUp));
+
+  if (shouldFold(state, 'grove', every)) { grove.fold(state); return; }
+
+  const d = grove.calc(state);
+  const patience = Math.max(30, every);
+
+  // Roots against canopy: keep the forest close to full, the way anyone
+  // watching the fullness bar would.
+  const split = grove.autoSplit(d.fullness);
+
+  // Seed: grow while growing is quick, then let the forest go to seed once
+  // the next level of roots is a long way off compared with how long this
+  // generation has already run.
+  let seedShare = 0;
+  if (g.seen.seed) {
+    const growing = d.sap.mul((1 - split) * d.rootReach);
+    const wait = growing.gt(0) ? d.nextRoot.sub(g.rootSap).div(growing).toNumber() : Infinity;
+    if (wait > Math.max(15, Math.min(90, 0.3 * g.genTime))) seedShare = 0.8;
+    if (grove.seedsFallAlone(state)) seedShare = 0.5;
+  }
+  grove.setShares(state, seedShare, split);
+
+  if (d.canFire && d.loamGain.gte(1) && g.fireTime >= patience) {
+    const next = cheapest(grove.LOAM_UPGRADES, g.loamUp);
+    const buysNext = next && g.loam.add(d.loamGain).gte(next.cost);
+    const bigJump = d.loamGain.gte(g.totalLoam.mul(2).max(1));
+    const stalled = g.fireTime > 900 && d.loamGain.gte(g.totalLoam.mul(0.5));
+    if (buysNext || bigJump || stalled) {
+      grove.wildfire(state);
+      return;
+    }
+  }
+
+  if (d.canSeedfall && d.seedGain.gte(1) && !grove.seedsFallAlone(state) && g.genTime >= patience) {
+    const next = cheapest(grove.SEED_UPGRADES, g.seedUp);
+    const buysNext = next && g.seeds.add(d.seedGain).gte(next.cost);
+    const bigJump = d.seedGain.gte(g.totalSeeds.mul(2).max(1));
+    const stalled = g.genTime > 300 && d.seedGain.gte(g.totalSeeds.mul(0.5));
+    if (buysNext || bigJump || stalled) grove.seedfall(state);
+  }
+}
+
 /**
  * every:   how often the player looks at the game and acts, in seconds
  * hours:   give up after this long
@@ -128,7 +177,7 @@ function actTidewater(state, every) {
  * worlds:  which worlds the player bothers with
  * dt:      length of one step of game time
  */
-export function simulate({ every = 3, hours = 24, until = null, keepLog = false, setup = null, worlds = { cinder: true, tidewater: true }, dt = 0.25 } = {}) {
+export function simulate({ every = 3, hours = 24, until = null, keepLog = false, setup = null, worlds = { cinder: true, tidewater: true, grove: true }, dt = 0.25 } = {}) {
   drain();
   const state = newState(0);
   if (setup) setup(state);
@@ -142,7 +191,7 @@ export function simulate({ every = 3, hours = 24, until = null, keepLog = false,
     const c = state.cinder;
     const w = state.tidewater;
     lines.push(
-      `${formatTime(t).padStart(9)}  ${text.padEnd(50)} fire ${String(Math.floor(c.peakTemp)).padStart(5)}°C  tide ${format(w.bestTide, 0).padStart(9)}  drift ${format(w.totalDriftwood, 0).padStart(8)}  star ${format(state.atlas.total, 0)}`
+      `${formatTime(t).padStart(9)}  ${text.padEnd(50)} fire ${String(Math.floor(c.peakTemp)).padStart(5)}°C  tide ${format(w.bestTide, 0).padStart(9)}  drift ${format(w.totalDriftwood, 0).padStart(8)}  trees ${format(state.grove.bestTrees, 0).padStart(9)}  star ${format(state.atlas.total, 0)}`
     );
   };
   const mark = (name) => { if (marks[name] === undefined) marks[name] = t; };
@@ -154,6 +203,7 @@ export function simulate({ every = 3, hours = 24, until = null, keepLog = false,
       actAtlas(state);
       if (worlds.cinder) actCinder(state, every);
       if (worlds.tidewater) actTidewater(state, every);
+      if (worlds.grove) actGrove(state, every);
       nextAct = t + every;
     }
     tick(state, dt);
@@ -171,6 +221,11 @@ export function simulate({ every = 3, hours = 24, until = null, keepLog = false,
       if (e.type === 'strandline') { log(`strandline: ${e.name}`); mark('line:' + e.id); }
       if (e.type === 'storm' && w.storms === 1) { log(`first storm (+${format(e.gain, 0)} driftwood)`); mark('firstStorm'); }
       if (e.type === 'driftUpgrade' && marks['drift:' + e.id] === undefined) { log(`driftwood upgrade: ${e.id}`); mark('drift:' + e.id); }
+      if (e.type === 'stand') { log(`stand: ${e.name}`); mark('stand:' + e.id); }
+      if (e.type === 'seedfall' && state.grove.seedfalls === 1) { log(`first seedfall (+${format(e.gain, 0)} seeds)`); mark('firstSeedfall'); }
+      if (e.type === 'seedUpgrade' && marks['seed:' + e.id] === undefined) { log(`seed upgrade: ${e.id}`); mark('seed:' + e.id); }
+      if (e.type === 'wildfire' && state.grove.fires === 1) { log(`first fire (+${format(e.gain, 0)} loam)`); mark('firstFire'); }
+      if (e.type === 'loamUpgrade' && marks['loam:' + e.id] === undefined) { log(`loam upgrade: ${e.id}`); mark('loam:' + e.id); }
       if (e.type === 'fold') { log(`FOLD ${e.world} (+${format(e.gain, 0)} starlight after ${formatTime(e.time)})`); mark(`fold:${e.world}`); }
       if (e.type === 'atlas') { log(`ATLAS: ${e.name}`); mark('atlas:' + e.id); }
     }

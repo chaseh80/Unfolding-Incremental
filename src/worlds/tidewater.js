@@ -49,6 +49,8 @@ export const BAL = {
   // Past the last strandline the world shines. Starlight per minute doubles
   // every time the best tide grows by this many powers of ten.
   shineDecades: 2,
+  // Newer worlds shine brighter, so each new page matters more than the last.
+  shineBase: 3,
 };
 
 export const FEED_NAMES = { channel: 'Channels', pan: 'Salt pans', pool: 'Pools', moon: 'The moon' };
@@ -197,6 +199,7 @@ export function calc(state) {
   let strength = D(kelp).mul(driftBed).mul(lineMult);
   if (U.groynes) strength = strength.mul(3);
   if (N.t_star) strength = strength.mul(state.atlas.total.add(1));
+  if (N.r_timber) strength = strength.mul(Math.pow(1 + state.grove.foldBestTrees.add(1).log10().toNumber(), 2));
 
   const high = t.gate * t.period;
   const low = t.period - high;
@@ -213,7 +216,7 @@ export function calc(state) {
   const far = STRANDLINES[STRANDLINES.length - 1].salt;
   let shine = 0;
   if (t.foldBestTide.gte(far)) {
-    shine = Math.pow(2, t.foldBestTide.div(far).log10().toNumber() / BAL.shineDecades) * (N.t_bright ? 3 : 1);
+    shine = BAL.shineBase * Math.pow(2, t.foldBestTide.div(far).log10().toNumber() / BAL.shineDecades) * (N.t_bright ? 3 : 1);
   }
 
   return {

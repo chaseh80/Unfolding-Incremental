@@ -54,10 +54,10 @@ export function buildOptions(game) {
 
   const keysBox = h('div', { class: 'box' },
     h('h3', {}, 'Keys'),
-    h('p', { class: 'desc' }, h('kbd', {}, 'M'), ' buys everything you can afford in the world you are looking at. ', h('kbd', {}, 'B'), ' burns the fire down in Cinder, and lets a storm through in Tidewater.'));
+    h('p', { class: 'desc' }, h('kbd', {}, 'M'), ' buys everything you can afford in the world you are looking at. ', h('kbd', {}, 'B'), ' burns the fire down in Cinder, lets a storm through in Tidewater, and lets the forest fall in Grove.'));
 
   const stat = () => h('dd');
-  const played = stat(), hottest = stat(), burns = stat(), smelts = stat(), storms = stat(), stars = stat(), folds = stat();
+  const played = stat(), hottest = stat(), burns = stat(), smelts = stat(), storms = stat(), falls = stat(), fires = stat(), stars = stat(), folds = stat();
   const statsBox = h('div', { class: 'box' },
     h('h3', {}, 'So far'),
     h('dl', { class: 'stats' },
@@ -66,6 +66,8 @@ export function buildOptions(game) {
       h('dt', {}, 'Times burned down'), burns,
       h('dt', {}, 'Times smelted'), smelts,
       h('dt', {}, 'Storms let through'), storms,
+      h('dt', {}, 'Forests fallen'), falls,
+      h('dt', {}, 'Fires let through'), fires,
       h('dt', {}, 'Starlight gathered'), stars,
       h('dt', {}, 'Pages folded'), folds));
 
@@ -96,7 +98,9 @@ export function buildOptions(game) {
     setText(smelts, s.cinder.smelts.toLocaleString('en-US'));
     setText(storms, s.tidewater.storms.toLocaleString('en-US'));
     setText(stars, formatInt(s.atlas.total));
-    setText(folds, (s.cinder.folds + s.tidewater.folds).toLocaleString('en-US'));
+    setText(falls, s.grove.seedfalls.toLocaleString('en-US'));
+    setText(fires, s.grove.fires.toLocaleString('en-US'));
+    setText(folds, (s.cinder.folds + s.tidewater.folds + s.grove.folds).toLocaleString('en-US'));
   }
 
   return { el, update, key() {} };

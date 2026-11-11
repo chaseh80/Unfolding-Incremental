@@ -12,6 +12,9 @@
   --salt: #a9c7e8;
   --drift: #c9a57a;
   --star: #f2e3a0;
+  --leaf: #8fcf7a;
+  --seed: #d8c66a;
+  --loam: #b9906a;
   --good: #9fd08a;
   --accent: var(--ember);
 }
@@ -192,10 +195,22 @@ kbd {
 .dial { margin: 12px 0; }
 .dial label { display: block; margin-bottom: 4px; }
 .dial input[type=range] { width: 100%; max-width: 520px; accent-color: var(--salt); }
-.box p.hint { color: var(--salt); }
+.box p.hint { color: var(--accent); }
 .points.wide .deg { width: 150px; }
 
 /* Atlas */
 .group { margin-top: 26px; }
 .group h2 { font-size: 16px; font-weight: 600; margin: 0 0 2px; color: var(--star); }
 .group p.desc { color: var(--muted); margin: 0; }
+
+/* Grove */
+.leaf-accent { --accent: var(--leaf); }
+.seed-accent { --accent: var(--seed); }
+.loam-accent { --accent: var(--loam); }
+.status.leaf-accent .amount { color: var(--leaf); }
+.bar.full { position: relative; height: 10px; overflow: visible; }
+.bar.full .fill { background: linear-gradient(90deg, #3f6b35, var(--leaf)); border-radius: 3px; }
+.bar.full .mark { position: absolute; top: -3px; width: 2px; height: 16px; background: var(--text); opacity: 0.7; }
+.meter.wide { max-width: none; margin: 10px 0 0; }
+.meter.wide .fill { background: linear-gradient(90deg, #3f6b35, var(--leaf)); }
+.dial input[type=range] { accent-color: var(--accent); }

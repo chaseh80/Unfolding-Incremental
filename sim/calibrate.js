@@ -5,6 +5,7 @@
 //
 //   node sim/calibrate.js cinder      Ash and Glass upgrade costs
 //   node sim/calibrate.js tidewater   strandlines and Driftwood upgrade costs
+//   node sim/calibrate.js grove       stands, and Seed and Loam upgrade costs
 //
 // Add --timeline to print the playthrough the result produces. Nothing is
 // written to the game files; copy the numbers across by hand.
@@ -14,6 +15,7 @@
 import { formatTime } from '../src/core/num.js';
 import * as cinder from '../src/worlds/cinder.js';
 import * as tw from '../src/worlds/tidewater.js';
+import * as grove from '../src/worlds/grove.js';
 import { simulate } from './bot.js';
 
 const NICE = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
@@ -81,7 +83,22 @@ if (which === 'tidewater') {
   });
 }
 
+if (which === 'grove') {
+  // Minutes after Grove is first unfolded, played on its own.
+  const stands = { thicket: 1.5, closed: 4, flower: 8, under: 24, deer: 42, owl: 62, lichen: 84, dead: 108, giant: 150, mother: 190, far: 235 };
+  const seed = { deep: 12, mast: 16, forester: 21, veteran: 27, saplings: 34, taproot: 42, broadleaf: 51, memory: 61, humus: 72, crown: 84 };
+  const loam = { fireweed: 130, clearing: 142, serotiny: 155, deeproot: 169, pioneer: 184, sun: 200, charcoal: 217 };
+  sim = { worlds: { grove: true }, setup: (s) => { s.atlas.nodes.grove = true; }, dt: 0.5 };
+  const items = [];
+  for (const p of grove.STANDS) items.push({ label: 'stand ' + p.id, target: stands[p.id], mark: 'stand:' + p.id, obj: p, field: 'trees', group: 'stand' });
+  for (const u of grove.SEED_UPGRADES) if (seed[u.id]) items.push({ label: 'seed ' + u.id, target: seed[u.id], mark: 'seed:' + u.id, obj: u, field: 'cost', group: 'seed' });
+  for (const u of grove.LOAM_UPGRADES) if (loam[u.id]) items.push({ label: 'loam ' + u.id, target: loam[u.id], mark: 'loam:' + u.id, obj: u, field: 'cost', group: 'loam', floor: 50 });
+  items.push({ label: 'seedNeedsSap', target: 9.5, mark: 'firstSeedfall', obj: grove.BAL, field: 'seedNeedsSap', group: 'seedneed' });
+  items.push({ label: 'loamNeedsSeeds', target: 118, mark: 'firstFire', obj: grove.BAL, field: 'loamNeedsSeeds', group: 'loamneed' });
+  tune(items, sim);
+}
+
 if (timeline) {
-  const { lines } = simulate({ ...sim, hours: 12, keepLog: true, until: which === 'tidewater' ? 'line:far' : 'end' });
+  const { lines } = simulate({ ...sim, hours: 12, keepLog: true, until: which === 'tidewater' ? 'line:far' : which === 'grove' ? 'stand:far' : 'end' });
   console.log('\n' + lines.join('\n'));
 }

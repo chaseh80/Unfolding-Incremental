@@ -221,7 +221,7 @@ export function buildTidewater(game) {
   const shineBox = h('div', { class: 'notice' }, h('h3', {}, 'The page is shining'), shineText,
     h('p', {}, 'Pages are folded in the Atlas.'));
 
-  const shorePanel = h('div', { class: 'panel' },
+  const shorePanel = h('div', { class: 'panel tide-accent' },
     shineBox, sluiceBox, tideBox, Object.values(rows).map((r) => r.el), feedAllRow, kelpBox, shoreStorm.el, worthBox);
 
   function updateShore(t, d) {

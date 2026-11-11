@@ -4,6 +4,7 @@ import { mergeSave, SAVE_VERSION } from './core/save.js';
 import * as atlas from './atlas.js';
 import * as cinder from './worlds/cinder.js';
 import * as tidewater from './worlds/tidewater.js';
+import * as grove from './worlds/grove.js';
 
 export function newState(now = Date.now()) {
   return {
@@ -18,11 +19,13 @@ export function newState(now = Date.now()) {
       tab: 'cinder',
       cinderTab: 'fire',
       tidewaterTab: 'shore',
+      groveTab: 'wood',
       visited: {},
     },
     atlas: atlas.defaults(),
     cinder: cinder.defaults(),
     tidewater: tidewater.defaults(),
+    grove: grove.defaults(),
   };
 }
 
@@ -39,6 +42,7 @@ export function tick(state, dt) {
   state.playtime += dt;
   cinder.tick(state, dt);
   tidewater.tick(state, dt);
+  grove.tick(state, dt);
   if (state.cinder.done) state.atlas.seen = true;
 }
 

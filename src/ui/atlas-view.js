@@ -4,6 +4,7 @@ import { format, formatDown, formatInt, formatTemp } from '../core/num.js';
 import * as atlas from '../atlas.js';
 import * as cinder from '../worlds/cinder.js';
 import * as tw from '../worlds/tidewater.js';
+import * as grove from '../worlds/grove.js';
 
 const whole = (x) => formatInt(x);
 
@@ -26,6 +27,14 @@ export function buildAtlas(game) {
       open: (s) => atlas.has(s, 'tidewater'),
       waiting: () => "Tidewater isn't shining yet this fold. It starts once a single tide passes the far strandline.",
       rule: () => 'It shines twice as brightly every time its best tide this fold grows a hundredfold.',
+    },
+    {
+      id: 'grove',
+      name: 'Grove',
+      mod: grove,
+      open: (s) => atlas.has(s, 'grove'),
+      waiting: () => "Grove isn't shining yet this fold. It starts once the forest reaches the wood beyond the wood.",
+      rule: () => 'It shines twice as brightly every time the biggest the forest has been this fold grows a thousandfold.',
     },
   ];
 
@@ -71,8 +80,8 @@ export function buildAtlas(game) {
   });
 
   const groveNotice = h('div', { class: 'notice' },
-    h('h3', {}, 'The third page'),
-    h('p', {}, "You've unfolded it, and it's blank. Grove hasn't been drawn yet."),
+    h('h3', {}, 'The fourth page'),
+    h('p', {}, "You've unfolded it, and it's blank. Clockwork hasn't been drawn yet."),
     h('p', {}, 'This is as far as the game goes for now. Your save will carry over when there is more.'));
 
   const el = h('section', { class: 'panel star-accent' },
@@ -88,7 +97,7 @@ export function buildAtlas(game) {
     const a = s.atlas;
     setText(starAmount, whole(a.starlight));
     setText(starTotal, a.total.gt(0) ? `You've gathered ${whole(a.total)} starlight in all.` : "You haven't gathered any starlight yet.");
-    setShown(groveNotice, atlas.has(s, 'grove'));
+    setShown(groveNotice, atlas.has(s, 'clockwork'));
 
     for (const b of worldBoxes) {
       const open = b.world.open(s);

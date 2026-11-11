@@ -239,6 +239,7 @@ export function calc(state) {
     if (A.banked) rate = rate.mul(3);
     if (N.c_star) rate = rate.mul(state.atlas.total.add(1));
     if (N.r_drift) rate = rate.mul(state.tidewater.totalDriftwood.add(1).sqrt());
+    if (N.r_timber) rate = rate.mul(Math.pow(1 + state.grove.foldBestTrees.add(1).log10().toNumber(), 2));
     if (passed('logs')) rate = rate.mul(2);
     if (G.lens) rate = rate.mul(BAL.lensMult);
   }

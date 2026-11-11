@@ -7,6 +7,7 @@ import { formatTime } from '../core/num.js';
 import { h, setClass, setShown, toast } from './dom.js';
 import { buildCinder } from './cinder-view.js';
 import { buildTidewater } from './tidewater-view.js';
+import { buildGrove } from './grove-view.js';
 import { buildAtlas } from './atlas-view.js';
 import { buildOptions } from './options-view.js';
 
@@ -54,6 +55,7 @@ function showEvents() {
     if (e.type === 'ignition') toast(e.name, e.text);
     if (e.type === 'end') toast('The edge of the map has started to curl.', 'The page is shining. Have a look at the Atlas.');
     if (e.type === 'strandline') toast(e.name, e.text);
+    if (e.type === 'stand') toast(e.name, e.text);
     if (e.type === 'atlas') toast(e.name, 'Drawn on the Atlas.');
   }
 }
@@ -77,6 +79,7 @@ game.state.lastSeen = Date.now();
 const views = [
   { id: 'cinder', label: 'Cinder', view: buildCinder(game), open: () => true },
   { id: 'tidewater', label: 'Tidewater', view: buildTidewater(game), open: (s) => !!s.atlas.nodes.tidewater },
+  { id: 'grove', label: 'Grove', view: buildGrove(game), open: (s) => !!s.atlas.nodes.grove },
   { id: 'atlas', label: 'Atlas', view: buildAtlas(game), open: (s) => s.atlas.seen },
   { id: 'options', label: 'Options', view: buildOptions(game), open: () => true },
 ];
@@ -88,7 +91,7 @@ document.getElementById('app').append(
   h('header', { class: 'top' },
     h('h1', {}, 'Manifold'),
     h('nav', { class: 'tabs' }, views.map((v) => v.btn)),
-    h('span', { class: 'version' }, 'v0.2')),
+    h('span', { class: 'version' }, 'v0.3')),
   ...views.map((v) => v.view.el));
 
 function currentView() {
@@ -102,7 +105,7 @@ function render() {
     const open = v.open(s);
     setShown(v.btn, open);
     setClass(v.btn, 'on', v === current);
-    setClass(v.btn, 'fresh', open && v !== current && (v.id === 'tidewater' || v.id === 'atlas') && !s.ui.visited[v.id]);
+    setClass(v.btn, 'fresh', open && v !== current && (v.id === 'tidewater' || v.id === 'grove' || v.id === 'atlas') && !s.ui.visited[v.id]);
     setShown(v.view.el, v === current);
   }
   current.view.update();
