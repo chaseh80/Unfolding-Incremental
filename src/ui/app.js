@@ -9,6 +9,8 @@ import { buildCinder } from './cinder-view.js';
 import { buildTidewater } from './tidewater-view.js';
 import { buildGrove } from './grove-view.js';
 import { buildClockwork } from './clockwork-view.js';
+import { buildHollow } from './hollow-view.js';
+import { buildStormfront } from './stormfront-view.js';
 import { buildAtlas } from './atlas-view.js';
 import { buildOptions } from './options-view.js';
 
@@ -59,6 +61,8 @@ function showEvents() {
     if (e.type === 'strandline') toast(e.name, e.text);
     if (e.type === 'stand') toast(e.name, e.text);
     if (e.type === 'chime') toast(e.name, e.text);
+    if (e.type === 'chamber') toast(e.name, e.text);
+    if (e.type === 'peal') toast(e.name, e.text);
   }
 }
 
@@ -95,6 +99,8 @@ const views = [
   { id: 'tidewater', label: 'Tidewater', view: buildTidewater(game), open: (s) => !!s.atlas.nodes.tidewater },
   { id: 'grove', label: 'Grove', view: buildGrove(game), open: (s) => !!s.atlas.nodes.grove },
   { id: 'clockwork', label: 'Clockwork', view: buildClockwork(game), open: (s) => !!s.atlas.nodes.clockwork },
+  { id: 'hollow', label: 'Hollow', view: buildHollow(game), open: (s) => !!s.atlas.nodes.hollow },
+  { id: 'stormfront', label: 'Stormfront', view: buildStormfront(game), open: (s) => !!s.atlas.nodes.stormfront },
   { id: 'atlas', label: 'Atlas', view: buildAtlas(game), open: (s) => s.atlas.seen },
   { id: 'options', label: 'Options', view: buildOptions(game), open: () => true },
 ];
@@ -106,7 +112,7 @@ document.getElementById('app').append(
   h('header', { class: 'top' },
     h('h1', {}, 'Manifold'),
     h('nav', { class: 'tabs' }, views.map((v) => v.btn)),
-    h('span', { class: 'version' }, 'v0.4')),
+    h('span', { class: 'version' }, 'v0.6')),
   ...views.map((v) => v.view.el));
 
 function currentView() {

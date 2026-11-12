@@ -11,7 +11,7 @@ export function h(tag, attrs = {}, ...children) {
     else if (key === 'hidden') el.hidden = !!value;
     else el.setAttribute(key, value === true ? '' : value);
   }
-  for (const child of children.flat()) {
+  for (const child of children.flat(Infinity)) {
     if (child === undefined || child === null || child === false) continue;
     el.append(child instanceof Node ? child : document.createTextNode(String(child)));
   }

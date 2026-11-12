@@ -9,6 +9,7 @@ import { Decimal, D } from '../core/num.js';
 import { costAt, affordableLevel } from '../core/scaling.js';
 import { emit } from '../core/events.js';
 import { gather } from '../atlas.js';
+import { struckMult } from './links.js';
 
 // ---------------------------------------------------------------------------
 // Balance
@@ -201,6 +202,8 @@ export function calc(state) {
   if (N.t_star) strength = strength.mul(state.atlas.total.add(1));
   if (N.r_timber) strength = strength.mul(Math.pow(1 + state.grove.foldBestTrees.add(1).log10().toNumber(), 2));
   if (N.r_works) strength = strength.mul(1 + state.clockwork.foldBestRate.add(1).log10().toNumber());
+  if (N.r_crystal) strength = strength.mul(1 + state.hollow.foldBestCrystal.add(1).log10().toNumber());
+  strength = strength.mul(struckMult(state, 'tidewater'));
 
   const high = t.gate * t.period;
   const low = t.period - high;

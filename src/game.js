@@ -6,6 +6,8 @@ import * as cinder from './worlds/cinder.js';
 import * as tidewater from './worlds/tidewater.js';
 import * as grove from './worlds/grove.js';
 import * as clockwork from './worlds/clockwork.js';
+import * as hollow from './worlds/hollow.js';
+import * as stormfront from './worlds/stormfront.js';
 
 export function newState(now = Date.now()) {
   return {
@@ -22,6 +24,8 @@ export function newState(now = Date.now()) {
       tidewaterTab: 'shore',
       groveTab: 'wood',
       clockworkTab: 'train',
+      hollowTab: 'cave',
+      stormfrontTab: 'storm',
       visited: {},
     },
     atlas: atlas.defaults(),
@@ -29,6 +33,8 @@ export function newState(now = Date.now()) {
     tidewater: tidewater.defaults(),
     grove: grove.defaults(),
     clockwork: clockwork.defaults(),
+    hollow: hollow.defaults(),
+    stormfront: stormfront.defaults(),
   };
 }
 
@@ -47,6 +53,8 @@ export function tick(state, dt) {
   tidewater.tick(state, dt);
   grove.tick(state, dt);
   clockwork.tick(state, dt);
+  hollow.tick(state, dt);
+  stormfront.tick(state, dt);
   if (state.cinder.done) state.atlas.seen = true;
 }
 

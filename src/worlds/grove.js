@@ -10,6 +10,7 @@ import { Decimal, D } from '../core/num.js';
 import { costAt, affordableLevel } from '../core/scaling.js';
 import { emit } from '../core/events.js';
 import { gather } from '../atlas.js';
+import { struckMult } from './links.js';
 
 // ---------------------------------------------------------------------------
 // Balance
@@ -254,6 +255,8 @@ export function calc(state) {
   if (N.r_ash) richness = richness.mul(Math.max(1, state.cinder.foldBest / 1000));
   if (N.r_mist) richness = richness.mul(1 + state.tidewater.foldBestTide.add(1).log10().toNumber());
   if (N.r_works) richness = richness.mul(1 + state.clockwork.foldBestRate.add(1).log10().toNumber());
+  if (N.r_crystal) richness = richness.mul(1 + state.hollow.foldBestCrystal.add(1).log10().toNumber());
+  richness = richness.mul(struckMult(state, 'grove'));
   const sap = g.trees.mul(richness);
 
   const rootsShare = (1 - g.seedShare) * (1 - g.canopySplit);

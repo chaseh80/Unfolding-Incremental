@@ -8,6 +8,7 @@ import { Decimal, D } from '../core/num.js';
 import { costAt, affordableLevel } from '../core/scaling.js';
 import { emit } from '../core/events.js';
 import { gather } from '../atlas.js';
+import { struckMult } from './links.js';
 
 // ---------------------------------------------------------------------------
 // Balance. Every tunable number for this world lives in this block.
@@ -248,6 +249,8 @@ export function calc(state) {
     if (N.r_drift) rate = rate.mul(state.tidewater.totalDriftwood.add(1).sqrt());
     if (N.r_timber) rate = rate.mul(Math.pow(1 + state.grove.foldBestTrees.add(1).log10().toNumber(), 2));
     if (N.r_works) rate = rate.mul(1 + state.clockwork.foldBestRate.add(1).log10().toNumber());
+    if (N.r_crystal) rate = rate.mul(1 + state.hollow.foldBestCrystal.add(1).log10().toNumber());
+    rate = rate.mul(struckMult(state, 'cinder'));
     if (passed('logs')) rate = rate.mul(2);
     if (G.lens) rate = rate.mul(BAL.lensMult);
   }

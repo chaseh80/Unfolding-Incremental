@@ -17,6 +17,10 @@
   --loam: #b9906a;
   --brass: #d9b45a;
   --spring: #a8b8c8;
+  --crystal: #c7a6f0;
+  --geode: #e39ab5;
+  --storm: #8fb4ff;
+  --fulg: #e8d9b0;
   --good: #9fd08a;
   --accent: var(--ember);
 }
@@ -230,3 +234,28 @@ kbd {
 .upgrade .need { font-size: 13px; color: var(--good); }
 .upgrade .need.unmet { color: #e08a8a; }
 .row kbd { align-self: center; }
+
+/* Hollow */
+.crystal-accent { --accent: var(--crystal); }
+.geode-accent { --accent: var(--geode); }
+.status.crystal-accent .amount { color: var(--crystal); }
+.lattice-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+.lattice-row.bridges { grid-template-columns: repeat(2, 1fr); padding: 0 16%; }
+.lattice-row.core { grid-template-columns: 1fr; padding: 0 33%; }
+.upgrade.node { min-height: 104px; }
+.upgrade.node.owned .need { color: var(--crystal); }
+@media (max-width: 560px) {
+  .lattice-row.bridges, .lattice-row.core { padding: 0; }
+  .upgrade.node { padding: 8px; font-size: 13px; }
+}
+
+/* Stormfront */
+.storm-accent { --accent: var(--storm); }
+.fulg-accent { --accent: var(--fulg); }
+.status.storm-accent .amount { color: var(--storm); }
+.meter.storm .fill { background: linear-gradient(90deg, #3d4f7a, var(--storm)); }
+.meter.storm.over .fill { background: linear-gradient(90deg, var(--storm), #fff3b0); }
+.upgrade.target { min-height: 104px; }
+.upgrade.target.aimed { cursor: default; border-color: var(--storm); background: #1a2030; }
+.upgrade.target.aimed .cost { color: var(--storm); }
+.upgrade.target .need { color: var(--muted); }

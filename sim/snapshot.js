@@ -8,10 +8,14 @@
 import { toExportString } from '../src/core/save.js';
 import { simulate } from './bot.js';
 import * as cw from '../src/worlds/clockwork.js';
+import * as hollow from '../src/worlds/hollow.js';
+import * as sf from '../src/worlds/stormfront.js';
 
 const minutes = Number(process.argv[2]) || 60;
 const alone = process.argv[3];
 if (alone === 'clockwork') cw.BAL.ignoreNeeds = true;
+if (alone === 'hollow') hollow.BAL.ignoreNeeds = true;
+if (alone === 'stormfront') sf.BAL.ignoreNeeds = true;
 const { state } = simulate({
   every: 3,
   hours: minutes / 60,

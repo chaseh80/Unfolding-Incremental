@@ -11,6 +11,7 @@ import { Decimal, D } from '../core/num.js';
 import { costAt, affordableLevel } from '../core/scaling.js';
 import { emit } from '../core/events.js';
 import { gather } from '../atlas.js';
+import { struckMult } from './links.js';
 
 // ---------------------------------------------------------------------------
 // Balance
@@ -277,6 +278,8 @@ export function calc(state, trainOverride = null) {
   if (U.oil) other = other.mul(3);
   if (N.k_star) other = other.mul(k.given.add(1));
   if (N.r_parts) other = other.mul(Math.max(1, state.cinder.foldBest / 1000));
+  if (N.r_crystal) other = other.mul(1 + state.hollow.foldBestCrystal.add(1).log10().toNumber());
+  other = other.mul(struckMult(state, 'clockwork'));
   const rate = k.wound ? run.product.mul(wear).mul(springBed).mul(chimeMult).mul(other) : D(0);
 
   let springMult = D(1);

@@ -10,6 +10,8 @@ export const GROUPS = [
   { id: 'tidewater', name: 'Tidewater', text: '' },
   { id: 'grove', name: 'Grove', text: '' },
   { id: 'clockwork', name: 'Clockwork', text: '' },
+  { id: 'hollow', name: 'Hollow', text: '' },
+  { id: 'stormfront', name: 'Stormfront', text: '' },
   { id: 'routes', name: 'Routes', text: 'Links between worlds.' },
 ];
 
@@ -18,6 +20,8 @@ export const NODES = [
   { id: 'grove', group: 'pages', cost: 3000, needs: 'tidewater', name: 'Grove', text: "Unlocks the third world." },
   { id: 'clockwork', group: 'pages', cost: 6e5, needs: 'grove', name: 'Clockwork', text: "Unlocks the fourth world." },
   { id: 'hollow', group: 'pages', cost: 1.5e9, needs: 'clockwork', name: 'Hollow', text: "Unlocks the fifth world." },
+  { id: 'stormfront', group: 'pages', cost: 1.2e13, needs: 'hollow', name: 'Stormfront', text: "Unlocks the sixth world." },
+  { id: 'archive', group: 'pages', cost: 3e18, needs: 'stormfront', name: 'Archive', text: "Unlocks the seventh world." },
 
   { id: 'c_hands', group: 'cinder', cost: 2, name: 'Hands that stay', text: "Keep banked coals, fire-tender, bellows-hand and flue-sweep when you fold Cinder." },
   { id: 'c_star', group: 'cinder', cost: 2, name: 'Starlit hearth', text: "Heat ×(total starlight + 1)." },
@@ -43,6 +47,16 @@ export const NODES = [
   { id: 'k_spring', group: 'clockwork', cost: 6e7, needs: 'clockwork', name: 'Self-winding', text: "Gain 2% of your rewind springs every second." },
   { id: 'k_bright', group: 'clockwork', cost: 1.5e8, needs: 'clockwork', name: 'A brighter works', text: "Clockwork gives 3× starlight." },
 
+  { id: 'h_hands', group: 'hollow', cost: 5e9, needs: 'hollow', name: 'Cave hands', text: "Keep miner, polish and template when you fold Hollow." },
+  { id: 'h_star', group: 'hollow', cost: 1e10, needs: 'hollow', name: 'Starlit cave', text: "Crystal ×(starlight gathered from Hollow + 1)." },
+  { id: 'h_geode', group: 'hollow', cost: 4e11, needs: 'hollow', name: 'Rockfall', text: "Gain 2% of your collapse geodes every second." },
+  { id: 'h_bright', group: 'hollow', cost: 1.2e12, needs: 'hollow', name: 'A brighter cave', text: "Hollow gives 3× starlight." },
+
+  { id: 's_hands', group: 'stormfront', cost: 1e14, needs: 'stormfront', name: 'Storm hands', text: "Keep storm spotter and static when you fold Stormfront." },
+  { id: 's_star', group: 'stormfront', cost: 3e15, needs: 'stormfront', name: 'Starlit storm', text: "Charge ×(starlight gathered from Stormfront + 1)." },
+  { id: 's_fulg', group: 'stormfront', cost: 1e17, needs: 'stormfront', name: 'Sand rain', text: "Gain 2% of your pass fulgurite every second." },
+  { id: 's_bright', group: 'stormfront', cost: 3e17, needs: 'stormfront', name: 'A brighter storm', text: "Stormfront gives 3× starlight." },
+
   { id: 'r_drift', group: 'routes', cost: 15, needs: 'tidewater', name: 'Driftwood for the fire', text: "Cinder's heat ×√(Tidewater's driftwood this fold)." },
   { id: 'r_sun', group: 'routes', cost: 20, needs: 'tidewater', name: 'Heat on the flats', text: "Tidewater's drying ×(Cinder's best temperature this fold / 1,000)²." },
   { id: 'r_ash', group: 'routes', cost: 3e4, needs: 'grove', name: 'Ash on the roots', text: "Grove's sap ×(Cinder's best temperature this fold / 1,000)." },
@@ -50,6 +64,8 @@ export const NODES = [
   { id: 'r_timber', group: 'routes', cost: 2e5, needs: 'grove', name: 'Timber', text: "Cinder's heat and Tidewater's salt ×(1 + powers of ten in Grove's best size this fold)²." },
   { id: 'r_parts', group: 'routes', cost: 2e6, needs: 'clockwork', name: 'Parts', text: "Clockwork's ticks ×(Cinder's best temperature this fold / 1,000)." },
   { id: 'r_works', group: 'routes', cost: 3e7, needs: 'clockwork', name: 'Regulators', text: "Cinder's heat, Tidewater's salt and Grove's sap ×(1 + powers of ten in Clockwork's best ticks per second this fold)." },
+  { id: 'r_crystal', group: 'routes', cost: 1.5e11, needs: 'hollow', name: 'Crystal sets', text: "Heat, salt, sap and ticks ×(1 + powers of ten in Hollow's best crystal this fold)." },
+  { id: 'r_front', group: 'routes', cost: 1.5e16, needs: 'stormfront', name: 'Weather system', text: "Stormfront's charge ×4 for each other world shining this fold." },
 ];
 const BY_ID = Object.fromEntries(NODES.map((n) => [n.id, n]));
 

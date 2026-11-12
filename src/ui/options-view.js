@@ -52,7 +52,7 @@ export function buildOptions(game) {
 
   const keysBox = h('div', { class: 'box' },
     h('h3', {}, 'Keys'),
-    h('p', { class: 'desc' }, h('kbd', {}, 'M'), ' buys everything in the current world. ', h('kbd', {}, 'B'), " does the current world's first reset."));
+    h('p', { class: 'desc' }, h('kbd', {}, 'M'), ' buys everything in the current world. ', h('kbd', {}, 'B'), " does the current world's first reset. ", h('kbd', {}, 'S'), ' strikes in Stormfront.'));
 
   const STATS = [
     ['Time played', (s) => formatTime(s.playtime)],
@@ -63,8 +63,11 @@ export function buildOptions(game) {
     ['Seedfalls', (s) => s.grove.seedfalls],
     ['Fires', (s) => s.grove.fires],
     ['Rewinds', (s) => s.clockwork.rewinds],
+    ['Collapses', (s) => s.hollow.collapses],
+    ['Strikes', (s) => s.stormfront.strikes],
+    ['Fronts passed', (s) => s.stormfront.fronts],
     ['Starlight gathered', (s) => formatInt(s.atlas.total)],
-    ['Folds', (s) => s.cinder.folds + s.tidewater.folds + s.grove.folds + s.clockwork.folds],
+    ['Folds', (s) => s.cinder.folds + s.tidewater.folds + s.grove.folds + s.clockwork.folds + s.hollow.folds + s.stormfront.folds],
   ].map(([label, get]) => ({ label, get, dd: h('dd') }));
   const statsBox = h('div', { class: 'box' },
     h('h3', {}, 'Stats'),

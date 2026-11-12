@@ -6,6 +6,8 @@ import * as cinder from '../worlds/cinder.js';
 import * as tw from '../worlds/tidewater.js';
 import * as grove from '../worlds/grove.js';
 import * as cw from '../worlds/clockwork.js';
+import * as hollow from '../worlds/hollow.js';
+import * as sf from '../worlds/stormfront.js';
 
 const whole = (x) => formatInt(x);
 
@@ -21,6 +23,10 @@ export function buildAtlas(game) {
       rule: 'Shines at the last stand. Doubles every 1,000× forest size.' },
     { id: 'clockwork', name: 'Clockwork', mod: cw, open: (s) => atlas.has(s, 'clockwork'),
       rule: 'Shines at Midnight. Doubles every 1,000× ticks per second.' },
+    { id: 'hollow', name: 'Hollow', mod: hollow, open: (s) => atlas.has(s, 'hollow'),
+      rule: 'Shines at the last chamber. Doubles every 1,000× best crystal.' },
+    { id: 'stormfront', name: 'Stormfront', mod: sf, open: (s) => atlas.has(s, 'stormfront'),
+      rule: 'Shines at the last peal. Doubles every 1,000× biggest strike.' },
   ];
 
   function tryFold(world) {
@@ -63,7 +69,7 @@ export function buildAtlas(game) {
   });
 
   const endNotice = h('div', { class: 'notice' },
-    h('h3', {}, 'Hollow'),
+    h('h3', {}, 'Archive'),
     h('p', {}, 'Not built yet. This is the end of the game for now.'));
 
   const el = h('section', { class: 'panel star-accent' },
@@ -79,7 +85,7 @@ export function buildAtlas(game) {
     const a = s.atlas;
     setText(starAmount, whole(a.starlight));
     setText(starTotal, `Gathered ${whole(a.total)} starlight in total.`);
-    setShown(endNotice, atlas.has(s, 'hollow'));
+    setShown(endNotice, atlas.has(s, 'archive'));
 
     for (const b of worldBoxes) {
       const open = b.world.open(s);
