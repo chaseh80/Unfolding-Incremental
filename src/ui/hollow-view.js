@@ -1,14 +1,16 @@
 // Everything you see while looking at Hollow.
 import { h, setText, setShown, setClass, setDisabled, confirmBox } from './dom.js';
 import { format, formatInt, formatMult, formatTime } from '../core/num.js';
-import { startBox, upgradeGrid, subTabs, pointList, resetBox, breakdown, shineNotice } from './parts.js';
+import { startBox, upgradeGrid, subTabs, pointList, resetBox, breakdown, shineNotice, real, speedTag } from './parts.js';
 import * as hollow from '../worlds/hollow.js';
+import { paceMult } from '../worlds/links.js';
 
 const amount = (x) => format(x, 1);
 const whole = (x) => formatInt(x);
 
 export function buildHollow(game) {
   const S = () => game.state;
+  const pace = () => paceMult(game.state, 'hollow');
   const H = () => game.state.hollow;
 
   function tryCollapse() {
@@ -46,7 +48,7 @@ export function buildHollow(game) {
 
   function updateStatus(c, d) {
     setText(crystalAmount, amount(c.crystal));
-    setText(rate, c.open ? `+${amount(d.rate)} per second` : 'Sealed');
+    setText(rate, c.open ? `+${amount(real(d.rate, pace()))} per second${speedTag(pace())}` : 'Sealed');
   }
 
   // --- Cave --------------------------------------------------------------
@@ -75,21 +77,23 @@ export function buildHollow(game) {
   const bridges = h('div', { class: 'lattice-row bridges' }, hollow.NODES.filter((n) => n.bridge).map(makeCard));
   const row3 = rowOf(3);
   const row4 = rowOf(4);
+  const row5 = rowOf(5);
   const core = h('div', { class: 'lattice-row core' }, hollow.NODES.filter((n) => n.core).map(makeCard));
   const pickNote = h('p', { class: 'desc' });
   const dissolveBtn = h('button', { class: 'act', onclick: tryDissolve }, 'Dissolve');
   const latticeBox = h('div', { class: 'box' }, h('h3', {}, 'Lattice'), pickNote,
-    row1, row2, bridges, row3, row4, core,
+    row1, row2, bridges, row3, row4, row5, core,
     h('div', { class: 'row', style: 'margin-top: 12px' }, dissolveBtn,
       h('span', { class: 'note', style: 'color: var(--muted)' }, 'Refunds all facets. Crystal resets to 0.')));
 
   function updateLattice(c, d) {
-    const picks = hollow.firstRowPicks(c);
+    const picks = hollow.firstRowPicks(c, S());
     setText(pickNote, `Pick ${picks} from the first row. Each node needs the one above it.`);
     setShown(row2, !!c.seen.row2);
     setShown(bridges, !!c.seen.bridges);
     setShown(row3, !!c.seen.row3);
     setShown(row4, !!c.seen.row4);
+    setShown(row5, !!c.seen.row5);
     setShown(core, !!c.seen.core);
     for (const id of Object.keys(cards)) {
       const k = cards[id];
@@ -100,7 +104,7 @@ export function buildHollow(game) {
       const cost = hollow.nodeCost(c, id);
       const price = cost === 0 ? 'Free' : `${cost} facet${cost === 1 ? '' : 's'}`;
       setText(k.state, st.owned ? 'Grown' : (st.blocked ? st.why : price));
-      const worth = d.worth[id];
+      const worth = d.worth[id] !== undefined ? d.worth[id] : d.light[id];
       setShown(k.value, !!st.owned && worth !== undefined);
       if (st.owned && worth !== undefined) setText(k.value, formatMult(worth));
     }
@@ -128,7 +132,7 @@ export function buildHollow(game) {
     shine.el, start, facetBox, latticeBox, caveCollapse.el, sources.el);
 
   function updateCave(c, d) {
-    shine.set(d.shine, c.pending);
+    shine.set(d.shine, c.pending, pace());
     setShown(start, !c.open);
     setShown(facetBox, c.open);
     setShown(latticeBox, c.open && d.facets > 0);
@@ -153,7 +157,7 @@ export function buildHollow(game) {
       d.geodeBed.gt(1) ? formatMult(d.geodeBed) : null,
       d.chamberMult > 1 ? formatMult(d.chamberMult) : null,
       d.other.gt(1.001) ? formatMult(d.other) : null,
-    ], amount(d.rate));
+    ], amount(real(d.rate, pace())), pace());
   }
 
   // --- Chambers ----------------------------------------------------------
@@ -187,7 +191,7 @@ export function buildHollow(game) {
     setText(geodeText, `Found ${whole(c.totalGeodes)} geodes${c.folds > 0 ? ' this fold' : ''}. Multiplies crystal by ${format(d.geodeBed, 2)}.`);
     const falling = !!S().atlas.nodes.h_geode;
     setShown(fallText, falling);
-    if (falling) setText(fallText, `Gaining ${format(d.geodeGain.mul(hollow.BAL.passiveGeodePerSecond), 1)} geodes per second.`);
+    if (falling) setText(fallText, `Gaining ${format(d.geodeGain.mul(hollow.BAL.passiveGeodePerSecond * pace()), 1)} geodes per second.`);
     updateCollapse(geodeCollapse, c, d);
     geodeGrid.update();
   }
@@ -196,7 +200,7 @@ export function buildHollow(game) {
 
   const tabs = subTabs([
     { id: 'cave', label: 'Cave', panel: cavePanel, update: updateCave, open: () => true },
-    { id: 'chambers', label: 'Chambers', panel: chambersPanel, update: (c, d) => chambers.update(c.bestChambers, d.chambers), open: (c) => c.bestChambers >= 1 },
+    { id: 'chambers', label: 'Chambers', panel: chambersPanel, update: (c, d) => chambers.update(c.bestChambers, d.chambers, hollow.chamberCap(S())), open: (c) => c.bestChambers >= 1 },
     { id: 'geodes', label: 'Geodes', panel: geodePanel, update: updateGeodes, open: (c) => !!c.seen.collapse },
   ], {
     current: () => S().ui.hollowTab,

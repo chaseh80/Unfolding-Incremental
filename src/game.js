@@ -2,12 +2,14 @@
 // the browser and in the simulator.
 import { mergeSave, SAVE_VERSION } from './core/save.js';
 import * as atlas from './atlas.js';
+import * as eclipse from './eclipse.js';
 import * as cinder from './worlds/cinder.js';
 import * as tidewater from './worlds/tidewater.js';
 import * as grove from './worlds/grove.js';
 import * as clockwork from './worlds/clockwork.js';
 import * as hollow from './worlds/hollow.js';
 import * as stormfront from './worlds/stormfront.js';
+import { paceMult } from './worlds/links.js';
 
 export function newState(now = Date.now()) {
   return {
@@ -29,6 +31,7 @@ export function newState(now = Date.now()) {
       visited: {},
     },
     atlas: atlas.defaults(),
+    eclipse: eclipse.defaults(),
     cinder: cinder.defaults(),
     tidewater: tidewater.defaults(),
     grove: grove.defaults(),
@@ -49,12 +52,14 @@ export function loadState(raw, now = Date.now()) {
 export function tick(state, dt) {
   if (!(dt > 0)) return;
   state.playtime += dt;
-  cinder.tick(state, dt);
-  tidewater.tick(state, dt);
-  grove.tick(state, dt);
-  clockwork.tick(state, dt);
-  hollow.tick(state, dt);
-  stormfront.tick(state, dt);
+  // Eclipse boosts make single worlds run faster.
+  cinder.tick(state, dt * paceMult(state, 'cinder'));
+  tidewater.tick(state, dt * paceMult(state, 'tidewater'));
+  grove.tick(state, dt * paceMult(state, 'grove'));
+  clockwork.tick(state, dt * paceMult(state, 'clockwork'));
+  hollow.tick(state, dt * paceMult(state, 'hollow'));
+  stormfront.tick(state, dt * paceMult(state, 'stormfront'));
+  eclipse.tick(state, dt);
   if (state.cinder.done) state.atlas.seen = true;
 }
 

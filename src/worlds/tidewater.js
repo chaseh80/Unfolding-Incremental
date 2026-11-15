@@ -9,7 +9,7 @@ import { Decimal, D } from '../core/num.js';
 import { costAt, affordableLevel } from '../core/scaling.js';
 import { emit } from '../core/events.js';
 import { gather } from '../atlas.js';
-import { struckMult } from './links.js';
+import { outsideMult, lightMult } from './links.js';
 
 // ---------------------------------------------------------------------------
 // Balance
@@ -69,7 +69,25 @@ export const STRANDLINES = [
   { id: 'wood', salt: 6e8, name: 'The drowned wood', text: "Driftwood gain ×2." },
   { id: 'light', salt: 1e12, name: 'Lighthouse rock', text: "Kelp grows 2× faster." },
   { id: 'far', salt: 4e12, name: 'The far strandline', text: "Tidewater starts to shine." },
+  // The reef expansion, bought with corona. These only count once it is owned.
+  { id: 'reef', salt: 1e70, name: 'The reef edge', text: "Unlocks the reef, with 2 plots." },
+  { id: 'forest', salt: 1e76, name: 'The kelp forest', text: "Starlight doubles every 1.5 powers of ten of your best tide, instead of every 2." },
+  { id: 'shelf', salt: 1e84, name: 'The shelf', text: "2 more reef plots." },
+  { id: 'hole', salt: 1e92, name: 'The blue hole', text: "Starlight doubles every power of ten." },
+  { id: 'trench', salt: 1e102, name: 'The trench', text: "2 more reef plots." },
 ];
+/** How many strandlines there are without the expansion. */
+export const BASE_LINES = STRANDLINES.findIndex((p) => p.id === 'far') + 1;
+
+// What can be planted on the reef. Each plot's coral gets stronger with
+// every tide it has grown through, and starts again when it is replanted.
+export const CORALS = [
+  { id: 'brain', name: 'Brain coral', text: 'Salt ×(1 + tides grown / 20).' },
+  { id: 'fan', name: 'Fan coral', text: "Tidewater's starlight ×(1 + tides grown / 20)." },
+  { id: 'stag', name: 'Staghorn', text: 'Driftwood gain ×(1 + tides grown / 20).' },
+];
+export const REEF_PLOTS = 6;
+const CORAL_TIDES = 20;
 const LINE_INDEX = Object.fromEntries(STRANDLINES.map((p, i) => [p.id, i]));
 
 export const DRIFT_UPGRADES = [
@@ -115,6 +133,8 @@ export function defaults() {
     bestTide: D(0), // best single tide this calm
     foldBestTide: D(0), // best single tide this fold
     bestLines: 0, // most strandlines ever passed
+    reef: ['', '', '', '', '', ''], // what is planted in each plot
+    reefAge: [0, 0, 0, 0, 0, 0], // tides each has grown through
     calmTime: 0,
 
     driftwood: D(0),
@@ -123,6 +143,7 @@ export function defaults() {
     driftUp: {},
 
     pending: D(0),
+    given: D(0), // all the starlight this page has handed over this Eclipse
     foldTime: 0,
     folds: 0,
     shining: false,
@@ -134,10 +155,43 @@ export function defaults() {
 // Derived numbers
 // ---------------------------------------------------------------------------
 
-function linesFrom(best) {
+/** How many strandlines count: the five past the far one need the reef expansion. */
+export function lineCap(state) {
+  return state.eclipse.exp.tidewater ? STRANDLINES.length : BASE_LINES;
+}
+
+function linesFrom(best, cap = BASE_LINES) {
   let n = 0;
-  while (n < STRANDLINES.length && best.gte(STRANDLINES[n].salt)) n++;
+  while (n < cap && best.gte(STRANDLINES[n].salt)) n++;
   return n;
+}
+
+/** How many of the reef's strandlines a tide has passed. */
+export function reefDepth(best) {
+  return linesFrom(best, STRANDLINES.length) - linesFrom(best, BASE_LINES);
+}
+
+/** How many reef plots are open. They stay open once reached. */
+export function reefPlots(state) {
+  const t = state.tidewater;
+  if (!state.eclipse.exp.tidewater) return 0;
+  if (t.bestLines > LINE_INDEX.trench) return 6;
+  if (t.bestLines > LINE_INDEX.shelf) return 4;
+  return t.bestLines > LINE_INDEX.reef ? 2 : 0;
+}
+
+/** What one plot's coral multiplies its thing by. */
+export function coralWorth(age) {
+  return 1 + age / CORAL_TIDES;
+}
+
+/** The product of every plot planted with one kind of coral. */
+function reefMult(state, kind) {
+  const t = state.tidewater;
+  const plots = reefPlots(state);
+  let m = 1;
+  for (let i = 0; i < plots; i++) if (t.reef[i] === kind) m *= coralWorth(t.reefAge[i]);
+  return m;
 }
 
 export function feedCurve(id) {
@@ -172,10 +226,11 @@ export function calc(state) {
   const t = state.tidewater;
   const U = t.driftUp;
   const N = state.atlas.nodes;
-  const lines = linesFrom(t.bestTide);
+  const lines = linesFrom(t.bestTide, lineCap(state));
   const passed = (id) => lines > LINE_INDEX[id];
 
-  const moonStep = U.pull ? BAL.moonMultPull : BAL.moonMult;
+  const E = state.eclipse.up;
+  const moonStep = E.t_moon ? 2 : U.pull ? BAL.moonMultPull : BAL.moonMult;
   const moon = Decimal.pow(moonStep, t.feeds.moon);
 
   let fill = D(1 + t.feeds.channel * BAL.channelFill).mul(moon);
@@ -190,20 +245,22 @@ export function calc(state) {
 
   let pool = D(BAL.basePool).mul(Decimal.pow(BAL.poolMult, t.feeds.pool));
   if (U.seawall) pool = pool.mul(8);
+  if (E.t_pool) pool = D('1e9000'); // pools never limit a tide
 
   // How much salt each measure of brine leaves behind.
   const kelpPower = U.beds ? BAL.kelpPowerBeds : BAL.kelpPower;
   const kelpTides = BAL.kelpTides / (passed('light') ? 2 : 1);
   const kelp = t.seen.kelp ? Math.pow(1 + t.kelp / kelpTides, kelpPower) : 1;
   const driftBed = t.totalDriftwood.add(1).pow(BAL.driftBedPower);
-  const lineMult = passed('causeway') ? Math.pow(BAL.lineMult, lines) : 1;
-  let strength = D(kelp).mul(driftBed).mul(lineMult);
+  const lineMult = passed('causeway') ? Math.pow(E.t_lines ? 2 : BAL.lineMult, lines) : 1;
+  const brain = reefMult(state, 'brain');
+  let strength = D(kelp).mul(driftBed).mul(lineMult).mul(brain);
   if (U.groynes) strength = strength.mul(3);
   if (N.t_star) strength = strength.mul(state.atlas.total.add(1));
   if (N.r_timber) strength = strength.mul(Math.pow(1 + state.grove.foldBestTrees.add(1).log10().toNumber(), 2));
   if (N.r_works) strength = strength.mul(1 + state.clockwork.foldBestRate.add(1).log10().toNumber());
   if (N.r_crystal) strength = strength.mul(1 + state.hollow.foldBestCrystal.add(1).log10().toNumber());
-  strength = strength.mul(struckMult(state, 'tidewater'));
+  strength = strength.mul(outsideMult(state, 'tidewater'));
 
   const high = t.gate * t.period;
   const low = t.period - high;
@@ -214,17 +271,20 @@ export function calc(state) {
 
   let driftMult = D(1);
   if (passed('wood')) driftMult = driftMult.mul(2);
+  driftMult = driftMult.mul(reefMult(state, 'stag'));
   const canStorm = passed('storm') && t.calmSalt.gte(BAL.driftNeedsSalt);
   const driftGain = canStorm ? t.calmSalt.div(BAL.driftNeedsSalt).pow(BAL.driftRoot).mul(driftMult).floor() : D(0);
 
-  const far = STRANDLINES[STRANDLINES.length - 1].salt;
+  const far = STRANDLINES[LINE_INDEX.far].salt;
   let shine = 0;
   if (t.foldBestTide.gte(far)) {
-    shine = BAL.shineBase * Math.pow(2, t.foldBestTide.div(far).log10().toNumber() / BAL.shineDecades) * (N.t_bright ? 3 : 1);
+    const reached = linesFrom(t.foldBestTide, lineCap(state));
+    const decades = reached > LINE_INDEX.hole ? 1 : reached > LINE_INDEX.forest ? 1.5 : BAL.shineDecades;
+    shine = BAL.shineBase * Math.pow(2, t.foldBestTide.div(far).log10().toNumber() / decades) * (N.t_bright ? 3 : 1) * lightMult(state) * reefMult(state, 'fan');
   }
 
   return {
-    lines, moonStep, moon, fill, dry, pool, sun, kelp, kelpPower, driftBed, lineMult, strength,
+    lines, brain, moonStep, moon, fill, dry, pool, sun, kelp, kelpPower, driftBed, lineMult, strength,
     high, low, filled, dried, perTide, income, driftMult, canStorm, driftGain, shine,
   };
 }
@@ -281,7 +341,7 @@ export function setPeriod(state, period) {
   t.nextPeriod = Math.max(BAL.minPeriod, Math.min(BAL.maxPeriod, period));
 }
 
-function resetCalm(t) {
+function resetCalm(t, keepKelp = false) {
   t.salt = D(BAL.startSalt);
   t.calmSalt = D(0);
   t.brine = D(0);
@@ -290,9 +350,20 @@ function resetCalm(t) {
   t.tideSalt = D(0);
   t.lastTide = D(0);
   t.tides = 0;
-  t.kelp = t.driftUp.holdfast ? Math.floor(t.kelp * BAL.holdfastKeeps) : 0;
+  if (!keepKelp) t.kelp = t.driftUp.holdfast ? Math.floor(t.kelp * BAL.holdfastKeeps) : 0;
   t.bestTide = D(0);
   t.calmTime = 0;
+}
+
+/** Plant a reef plot. Whatever was growing there is lost. */
+export function plantCoral(state, plot, kind) {
+  const t = state.tidewater;
+  if (!(plot >= 0 && plot < reefPlots(state))) return false;
+  if (kind !== '' && !CORALS.some((c) => c.id === kind)) return false;
+  if (t.reef[plot] === kind) return false;
+  t.reef[plot] = kind;
+  t.reefAge[plot] = 0;
+  return true;
 }
 
 export function storm(state) {
@@ -303,7 +374,7 @@ export function storm(state) {
   t.totalDriftwood = t.totalDriftwood.add(d.driftGain);
   t.storms += 1;
   emit('storm', { gain: d.driftGain, time: t.calmTime });
-  resetCalm(t);
+  resetCalm(t, !!state.eclipse.up.t_kelp);
   return true;
 }
 
@@ -327,7 +398,9 @@ export function fold(state) {
   fresh.bestLines = t.bestLines;
   fresh.shining = t.shining;
   fresh.folds = t.folds + 1;
+  fresh.given = t.given.add(gained);
   fresh.storms = t.storms;
+  fresh.reef = t.reef.slice(); // the planting is kept; the coral starts growing again
   fresh.gate = fresh.nextGate = t.nextGate;
   fresh.period = fresh.nextPeriod = t.nextPeriod;
   if (state.atlas.nodes.t_hands) {
@@ -347,13 +420,15 @@ function endTide(state, d) {
   const t = state.tidewater;
   t.tides += 1;
   if (t.seen.kelp) t.kelp += 1;
+  const plots = reefPlots(state);
+  for (let i = 0; i < plots; i++) if (t.reef[i]) t.reefAge[i] += 1;
   t.lastTide = t.tideSalt;
   if (t.tideSalt.gt(t.bestTide)) t.bestTide = t.tideSalt;
   if (t.tideSalt.gt(t.foldBestTide)) t.foldBestTide = t.tideSalt;
   t.tideSalt = D(0);
   t.phase = 0;
 
-  const lines = linesFrom(t.bestTide);
+  const lines = linesFrom(t.bestTide, lineCap(state));
   while (t.bestLines < lines) {
     const p = STRANDLINES[t.bestLines];
     t.bestLines += 1;

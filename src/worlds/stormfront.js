@@ -14,7 +14,7 @@ import { Decimal, D } from '../core/num.js';
 import { costAt, affordableLevel } from '../core/scaling.js';
 import { emit } from '../core/events.js';
 import { gather } from '../atlas.js';
-import { struckMult } from './links.js';
+import { outsideMult, lightMult } from './links.js';
 import * as cinder from './cinder.js';
 import * as tidewater from './tidewater.js';
 import * as grove from './grove.js';
@@ -67,6 +67,7 @@ const FEED_BY_ID = Object.fromEntries(FEEDS.map((f) => [f.id, f]));
 export const TARGETS = [
   { id: 'ground', name: 'Ground' },
   { id: 'mast', name: 'Mast' },
+  { id: 'sky', name: 'Sky' }, // from the high sky expansion
   { id: 'cinder', name: 'Cinder', world: true, what: 'Heat' },
   { id: 'tidewater', name: 'Tidewater', world: true, what: 'Salt' },
   { id: 'grove', name: 'Grove', world: true, what: 'Sap' },
@@ -87,7 +88,15 @@ export const PEALS = [
   { id: 'ball', strike: 8e31, name: 'Ball lightning', text: 'Fulgurite gain ×3.' },
   { id: 'sprite', strike: 6e37, name: 'Sprite', text: 'Tension power +0.5.' },
   { id: 'eye', strike: 1e41, name: 'The eye', text: 'Stormfront starts to shine.' },
+  // The high sky expansion, bought with corona. These only count once it is owned.
+  { id: 'aurora', strike: 1e76, name: 'Aurora', text: 'Unlocks aiming at the sky.' },
+  { id: 'jet', strike: 1e84, name: 'Blue jet', text: 'Each peal multiplies charge by 3 instead of 2.' },
+  { id: 'elmo', strike: 1e90, name: "St. Elmo's fire", text: 'Sky power 2 → 3.' },
+  { id: 'elve', strike: 1e98, name: 'Elves', text: 'Tension power +1.' },
+  { id: 'zenith', strike: 1e106, name: 'The zenith', text: 'Sky power 3 → 4.' },
 ];
+/** How many peals there are without the expansion. */
+export const BASE_PEALS = PEALS.findIndex((p) => p.id === 'eye') + 1;
 const PEAL_INDEX = Object.fromEntries(PEALS.map((p, i) => [p.id, i]));
 
 const NEED_KINDS = {
@@ -135,6 +144,8 @@ export function defaults() {
     feeds: { updraft: 0, anvil: 0, fork: 0 },
     aim: 'ground', // where the next strike lands; goes back to the ground afterwards
     mast: D(0), // biggest strike to hit the mast, this front
+    sky: D(0), // biggest strike to hit the sky, this fold
+    skyLight: 1, // what the sky's record multiplies all starlight by, worked out every tick
     struck: { cinder: D(0), tidewater: D(0), grove: D(0), clockwork: D(0), hollow: D(0) }, // kept for good
     frontTime: 0,
     bestPeals: 0,
@@ -157,10 +168,31 @@ export function defaults() {
 // Working things out
 // ---------------------------------------------------------------------------
 
-function pealsFrom(best) {
+/** How many peals count: the five past the eye need the expansion. */
+export function pealCap(state) {
+  return state.eclipse.exp.stormfront ? PEALS.length : BASE_PEALS;
+}
+
+function pealsFrom(best, cap = BASE_PEALS) {
   let n = 0;
-  while (n < PEALS.length && best.gte(PEALS[n].strike)) n++;
+  while (n < cap && best.gte(PEALS[n].strike)) n++;
   return n;
+}
+
+/** How many of the high sky's peals a strike has reached. */
+export function highSkyDepth(best) {
+  return pealsFrom(best, PEALS.length) - pealsFrom(best, BASE_PEALS);
+}
+
+/** The power the sky's record is raised to. It rises with two of the new peals. */
+export function skyPower(state) {
+  const reached = pealsFrom(state.stormfront.foldBestStrike, pealCap(state));
+  return reached > PEAL_INDEX.zenith ? 4 : reached > PEAL_INDEX.elmo ? 3 : 2;
+}
+
+/** What a strike on the sky of that size multiplies all starlight by. */
+export function skyMult(state, record = state.stormfront.sky) {
+  return record.lte(0) ? 1 : Math.pow(1 + record.add(1).log10().toNumber(), skyPower(state));
 }
 
 const last = (list) => list[list.length - 1];
@@ -169,10 +201,10 @@ const last = (list) => list[list.length - 1];
 export function shiningWorlds(state) {
   let n = 0;
   if (state.cinder.foldBest >= cinder.BAL.endTemp) n++;
-  if (state.tidewater.foldBestTide.gte(last(tidewater.STRANDLINES).salt)) n++;
-  if (state.grove.foldBestTrees.gte(last(grove.STANDS).trees)) n++;
-  if (state.clockwork.foldBestRate.gte(last(clockwork.CHIMES).rate)) n++;
-  if (state.hollow.foldBestCrystal.gte(last(hollow.CHAMBERS).crystal)) n++;
+  if (state.tidewater.foldBestTide.gte(tidewater.STRANDLINES[tidewater.BASE_LINES - 1].salt)) n++;
+  if (state.grove.foldBestTrees.gte(grove.STANDS[grove.BASE_STANDS - 1].trees)) n++;
+  if (state.clockwork.foldBestRate.gte(clockwork.CHIMES[clockwork.BASE_CHIMES - 1].rate)) n++;
+  if (state.hollow.foldBestCrystal.gte(hollow.CHAMBERS[hollow.BASE_CHAMBERS - 1].crystal)) n++;
   return n;
 }
 
@@ -188,6 +220,7 @@ export function targetOpen(state, id) {
   const s = state.stormfront;
   if (id === 'ground') return true;
   if (id === 'mast') return !!s.seen.mast;
+  if (id === 'sky') return !!s.seen.sky && !!state.eclipse.exp.stormfront;
   if (!TARGET_BY_ID[id] || !s.seen.worlds) return false;
   return id === 'cinder' || !!state.atlas.nodes[id];
 }
@@ -195,6 +228,7 @@ export function targetOpen(state, id) {
 /** The biggest strike a target has taken. The ground keeps no record. */
 export function recordAt(s, id) {
   if (id === 'mast') return s.mast;
+  if (id === 'sky') return s.sky;
   return s.struck[id] || D(0);
 }
 
@@ -216,15 +250,16 @@ export function calc(state) {
   const s = state.stormfront;
   const U = s.fulgUp;
   const N = state.atlas.nodes;
-  const peals = pealsFrom(s.bestStrike);
+  let peals = pealsFrom(s.bestStrike, pealCap(state));
+  if (state.eclipse.up.s_peal) peals = Math.max(peals, pealsFrom(s.foldBestStrike, pealCap(state)));
   const passed = (id) => peals > PEAL_INDEX[id];
 
   const holdMax = (BAL.holdSeconds + BAL.anvilSeconds * s.feeds.anvil) * (U.tall ? 2 : 1);
   const tensionSeconds = BAL.tensionSeconds / (U.surge ? 2 : 1);
-  const power = BAL.tensionPower + BAL.forkPower * s.feeds.fork + (passed('sprite') ? 0.5 : 0) + (U.keen ? 0.5 : 0);
+  const power = BAL.tensionPower + BAL.forkPower * s.feeds.fork + (passed('sprite') ? 0.5 : 0) + (U.keen ? 0.5 : 0) + (passed('elve') ? 1 : 0);
   // Only a strike aimed away from the ground builds tension past the breaking point.
   const aimed = s.aim !== 'ground' && targetOpen(state, s.aim);
-  const overRate = U.leader ? 2 : 1;
+  const overRate = (U.leader ? 2 : 1) * (state.eclipse.up.s_over ? 3 : 1);
   const tensionAt = (held, over) => {
     const counted = over && held > holdMax ? holdMax + (held - holdMax) * overRate : Math.min(held, holdMax);
     return Math.pow(1 + counted / tensionSeconds, power);
@@ -235,10 +270,11 @@ export function calc(state) {
   const updrafts = Decimal.pow(BAL.updraftMult, s.feeds.updraft);
   const mast = mastMult(s);
   const bed = s.totalFulgurite.add(1).pow(U.rich ? BAL.fulgBedPowerRich : BAL.fulgBedPower);
-  const pealMult = passed('supercell') ? Math.pow(BAL.pealMult, peals) : 1;
+  const pealMult = passed('supercell') ? Math.pow(passed('jet') ? 3 : BAL.pealMult, peals) : 1;
   const shiningOthers = shiningWorlds(state);
   let other = D(1);
   if (U.static) other = other.mul(3);
+  other = other.mul(outsideMult(state, 'stormfront'));
   if (N.s_star) other = other.mul(s.given.add(1));
   if (N.r_front) other = other.mul(Math.pow(BAL.frontMult, shiningOthers));
   const rate = s.open ? updrafts.mul(mast).mul(bed).mul(pealMult).mul(other) : D(0);
@@ -256,10 +292,10 @@ export function calc(state) {
   const canPass = passed('sheet') && s.totalThunder.gte(BAL.fulgNeedsThunder);
   const fulgGain = canPass ? s.totalThunder.div(BAL.fulgNeedsThunder).pow(BAL.fulgRoot).mul(fulgMult).floor() : D(0);
 
-  const far = last(PEALS).strike;
+  const far = PEALS[PEAL_INDEX.eye].strike;
   let shine = 0;
   if (s.foldBestStrike.gte(far)) {
-    shine = BAL.shineBase * Math.pow(2, s.foldBestStrike.div(far).log10().toNumber() / BAL.shineDecades) * (N.s_bright ? 3 : 1);
+    shine = BAL.shineBase * Math.pow(2, s.foldBestStrike.div(far).log10().toNumber() / BAL.shineDecades) * (N.s_bright ? 3 : 1) * lightMult(state);
   }
 
   return { peals, holdMax, tensionSeconds, power, tension, updrafts, mast, bed, pealMult, shiningOthers, other, rate, strikeMult, strike, fullStrike, sizeAfter, aimed, overcharge, rain, canPass, fulgGain, shine };
@@ -325,7 +361,7 @@ export function setAim(state, id) {
 /** Record any peals the biggest strike has reached, and what they unlock. */
 function notePeals(state) {
   const s = state.stormfront;
-  const peals = pealsFrom(s.bestStrike);
+  const peals = pealsFrom(s.bestStrike, pealCap(state));
   while (s.bestPeals < peals) {
     const p = PEALS[s.bestPeals];
     s.bestPeals += 1;
@@ -336,6 +372,7 @@ function notePeals(state) {
   if (s.bestPeals > PEAL_INDEX.sheet) s.seen.pass = true;
   if (s.bestPeals > PEAL_INDEX.forked) s.seen.fork = true;
   if (s.bestPeals > PEAL_INDEX.crawler) s.seen.worlds = true;
+  if (s.bestPeals > PEAL_INDEX.aurora) s.seen.sky = true;
   if (!s.shining && s.bestPeals > PEAL_INDEX.eye) {
     s.shining = true;
     state.atlas.seen = true;
@@ -348,12 +385,15 @@ export function strike(state) {
   if (!s.open || s.charge.lte(0)) return false;
   const size = calc(state).strike;
   const aim = targetOpen(state, s.aim) ? s.aim : 'ground';
-  if (aim === 'ground') {
+  if (aim === 'ground' || state.eclipse.up.paid) {
     s.thunder = s.thunder.add(size);
     s.totalThunder = s.totalThunder.add(size);
-  } else if (aim === 'mast') {
+  }
+  if (aim === 'mast') {
     if (size.gt(s.mast)) s.mast = size;
-  } else if (size.gt(s.struck[aim])) {
+  } else if (aim === 'sky') {
+    if (size.gt(s.sky)) s.sky = size;
+  } else if (aim !== 'ground' && size.gt(s.struck[aim])) {
     s.struck[aim] = size;
   }
   if (size.gt(s.bestStrike)) s.bestStrike = size;
@@ -383,7 +423,7 @@ export function pass(state) {
   s.bestStrike = D(0);
   s.feeds = { updraft: 0, anvil: 0, fork: 0 };
   s.aim = 'ground';
-  if (!s.fulgUp.keep) s.mast = D(0);
+  if (!s.fulgUp.keep && !state.eclipse.up.s_mast) s.mast = D(0);
   s.frontTime = 0;
   return true;
 }
@@ -451,6 +491,7 @@ export function tick(state, dt) {
   d = calc(state);
 
   notePeals(state);
+  s.skyLight = Math.min(1e150, skyMult(state));
 
   if (N.s_fulg && d.fulgGain.gt(0)) {
     const found = d.fulgGain.mul(BAL.passiveFulgPerSecond * dt);

@@ -1,8 +1,9 @@
 // Everything you see while looking at Cinder.
 import { h, setText, setShown, confirmBox } from './dom.js';
 import { Decimal, format, formatInt, formatMult, formatTemp, formatTime } from '../core/num.js';
-import { setWidth, startBox, upgradeGrid, feedRow, subTabs, pointList, resetBox, milestoneList, breakdown, shineNotice, dial } from './parts.js';
+import { setWidth, startBox, upgradeGrid, feedRow, subTabs, pointList, resetBox, milestoneList, breakdown, shineNotice, dial, real, speedTag } from './parts.js';
 import * as cinder from '../worlds/cinder.js';
+import { paceMult } from '../worlds/links.js';
 
 const heat = (x) => format(x, 1);
 const whole = (x) => formatInt(x);
@@ -13,6 +14,7 @@ const tempOf = (id) => IGN[indexOf(id)].temp;
 export function buildCinder(game) {
   const S = () => game.state;
   const C = () => game.state.cinder;
+  const pace = () => paceMult(game.state, 'cinder');
 
   function tryBurn() {
     const c = C();
@@ -59,9 +61,9 @@ export function buildCinder(game) {
 
   function updateStatus(c, d) {
     setText(amount, heat(c.heat));
-    setText(rate, c.lit ? `+${heat(d.rate)} per second` : 'Not lit');
+    setText(rate, c.lit ? `+${heat(real(d.rate, pace()))} per second${speedTag(pace())}` : 'Not lit');
     setText(tempLine, c.lit ? formatTemp(d.temp) : '');
-    const next = IGN[d.points];
+    const next = d.points < cinder.pointCap(S()) ? IGN[d.points] : null;
     setShown(meter, c.lit && !!next);
     if (c.lit && next) {
       const from = d.points > 0 ? IGN[d.points - 1].temp : cinder.BAL.tempBase;
@@ -121,7 +123,7 @@ export function buildCinder(game) {
     shine.el, spark, Object.values(feeds).map((f) => f.el), buyAll, damperBox, embersBox, fireBurn.el, sources.el);
 
   function updateFire(c, d) {
-    shine.set(d.shine, c.pending);
+    shine.set(d.shine, c.pending, pace());
     setShown(spark, !c.lit);
     const text = {
       kindling: `+${format(d.kindlingPower, d.kindlingPower < 10 && d.kindlingPower % 1 ? 1 : 0)} heat per second each.`,
@@ -161,7 +163,7 @@ export function buildCinder(game) {
       c.seen.embers ? formatMult(d.embers) : null,
       d.glassHeat.gt(1) ? formatMult(d.glassHeat) : null,
       other.gt(1.001) || other.lt(0.999) ? formatMult(other) : null,
-    ], heat(d.rate));
+    ], heat(real(d.rate, pace())), pace());
   }
 
   // --- Ignition points ---------------------------------------------------
@@ -194,7 +196,7 @@ export function buildCinder(game) {
     setText(ashText, `Raked ${whole(c.totalAsh)} ash${since}. Multiplies heat by ${format(d.ashBed, 2)}.`);
     const shedding = cinder.sheds(S());
     setShown(shedText, shedding);
-    if (shedding) setText(shedText, `Shedding ${format(d.ashGain.mul(cinder.BAL.passiveAshPerSecond), 1)} ash per second.`);
+    if (shedding) setText(shedText, `Shedding ${format(d.ashGain.mul(cinder.BAL.passiveAshPerSecond * pace()), 1)} ash per second.`);
     updateBurn(ashBurn, c, d);
     ashGrid.update();
   }
@@ -225,7 +227,7 @@ export function buildCinder(game) {
       : 'No glass yet.');
     const standing = !!S().atlas.nodes.c_glass;
     setShown(glassPassive, standing);
-    if (standing) setText(glassPassive, `Making ${format(d.glassGain.mul(cinder.BAL.passiveGlassPerSecond), 1)} glass per second.`);
+    if (standing) setText(glassPassive, `Making ${format(d.glassGain.mul(cinder.BAL.passiveGlassPerSecond * pace()), 1)} glass per second.`);
 
     const need = cinder.BAL.glassNeedsAsh;
     let missing = '';
@@ -245,7 +247,7 @@ export function buildCinder(game) {
 
   const tabs = subTabs([
     { id: 'fire', label: 'Fire', panel: firePanel, update: updateFire, open: () => true },
-    { id: 'ignition', label: 'Ignition points', panel: ignitionPanel, update: (c, d) => points.update(c.bestPoints, d.points), open: (c) => c.bestPoints >= 1 },
+    { id: 'ignition', label: 'Ignition points', panel: ignitionPanel, update: (c, d) => points.update(c.bestPoints, d.points, cinder.pointCap(S())), open: (c) => c.bestPoints >= 1 },
     { id: 'ash', label: 'Ash', panel: ashPanel, update: updateAsh, open: (c) => !!c.seen.ash },
     { id: 'glass', label: 'Glass', panel: glassPanel, update: updateGlass, open: (c) => !!c.seen.glass },
   ], {

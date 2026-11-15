@@ -1,6 +1,6 @@
 // Pieces of the page that more than one world uses.
 import { h, setText, setShown, setClass, setDisabled } from './dom.js';
-import { format, formatDown, formatInt } from '../core/num.js';
+import { Decimal, format, formatDown, formatInt } from '../core/num.js';
 
 export function setWidth(el, frac) {
   const w = (Math.max(0, Math.min(1, frac || 0)) * 100).toFixed(1) + '%';
@@ -127,10 +127,10 @@ export function pointList(list, label) {
   });
   return {
     el: h('ul', { class: 'points wide' }, rows.map((r) => r.li)),
-    /** known: how many you have ever passed. lit: how many count right now. */
-    update(known, lit) {
+    /** known: how many you have ever passed. lit: how many count right now. limit: how many exist for this player. */
+    update(known, lit, limit = rows.length) {
       rows.forEach((r, i) => {
-        setShown(r.li, i <= known);
+        setShown(r.li, i <= known && i < limit);
         setClass(r.li, 'lit', i < lit);
         setClass(r.li, 'unknown', i >= known);
         setText(r.name, i < known ? r.p.name : '???');
@@ -167,20 +167,30 @@ export function milestoneList(title, texts) {
 }
 
 /** A small table of what multiplies what. */
+/** A rate as it passes in real time, for a world an Eclipse upgrade makes run faster. */
+export const real = (x, pace) => new Decimal(x).mul(pace);
+
+/** What a status strip adds when a world runs faster than normal. */
+export const speedTag = (pace) => (pace > 1 ? ` (runs ${formatInt(pace)}× faster)` : '');
+
 export function breakdown(title, labels, totalLabel) {
   const rows = labels.map((label) => {
     const value = h('td');
     return { value, tr: h('tr', {}, h('td', {}, label), value) };
   });
   const total = h('td');
+  const speed = h('td');
+  const speedRow = h('tr', {}, h('td', {}, 'Speed'), speed);
   const el = h('div', { class: 'box' }, h('h3', {}, title),
-    h('table', { class: 'breakdown' }, rows.map((r) => r.tr), h('tr', { class: 'total' }, h('td', {}, totalLabel), total)));
+    h('table', { class: 'breakdown' }, rows.map((r) => r.tr), speedRow, h('tr', { class: 'total' }, h('td', {}, totalLabel), total)));
   return {
     el,
     /** values: one string per label, or null to hide that row */
-    set(shown, values, totalText) {
+    set(shown, values, totalText, pace = 1) {
       setShown(el, shown);
       if (!shown) return;
+      setShown(speedRow, pace > 1);
+      if (pace > 1) setText(speed, `×${formatInt(pace)}`);
       rows.forEach((r, i) => { setShown(r.tr, values[i] !== null); if (values[i] !== null) setText(r.value, values[i]); });
       setText(total, totalText);
     },
@@ -192,9 +202,9 @@ export function shineNotice(name) {
   const el = h('div', { class: 'notice' }, h('h3', {}, `${name} is shining`), text);
   return {
     el,
-    set(shine, pending) {
+    set(shine, pending, pace = 1) {
       setShown(el, shine > 0);
-      if (shine > 0) setText(text, `${format(shine, 2)} starlight per minute. ${formatDown(pending)} gathered since the last fold. Fold in the Atlas.`);
+      if (shine > 0) setText(text, `${format(real(shine, pace), 2)} starlight per minute. ${formatDown(pending)} gathered since the last fold. Fold in the Atlas.`);
     },
   };
 }

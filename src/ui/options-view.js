@@ -67,6 +67,7 @@ export function buildOptions(game) {
     ['Strikes', (s) => s.stormfront.strikes],
     ['Fronts passed', (s) => s.stormfront.fronts],
     ['Starlight gathered', (s) => formatInt(s.atlas.total)],
+    ['Eclipses', (s) => s.eclipse.count],
     ['Folds', (s) => s.cinder.folds + s.tidewater.folds + s.grove.folds + s.clockwork.folds + s.hollow.folds + s.stormfront.folds],
   ].map(([label, get]) => ({ label, get, dd: h('dd') }));
   const statsBox = h('div', { class: 'box' },

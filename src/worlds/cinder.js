@@ -8,7 +8,7 @@ import { Decimal, D } from '../core/num.js';
 import { costAt, affordableLevel } from '../core/scaling.js';
 import { emit } from '../core/events.js';
 import { gather } from '../atlas.js';
-import { struckMult } from './links.js';
+import { outsideMult, lightMult } from './links.js';
 
 // ---------------------------------------------------------------------------
 // Balance. Every tunable number for this world lives in this block.
@@ -85,7 +85,16 @@ export const IGNITIONS = [
   { id: 'brick', temp: 2800, name: 'Firebrick softens', text: "Glass gain ×2." },
   { id: 'tungsten', temp: 3422, name: 'Tungsten melts', text: "Ember power +0.25." },
   { id: 'sun', temp: 5500, name: 'As hot as the face of the sun', text: "Cinder starts to shine." },
+  // The Star forge expansion, bought with corona. These only count once it is owned.
+  { id: 'blue', temp: 7500, name: 'Blue heat', text: "Starlight doubles every 350°C instead of 500°C." },
+  { id: 'carbon', temp: 10500, name: 'Carbon boils', text: "The damper is twice as strong both ways." },
+  { id: 'plasma', temp: 14000, name: 'Plasma', text: "Each ignition point multiplies heat by 3." },
+  { id: 'halo', temp: 18000, name: 'Halo', text: "Starlight doubles every 200°C." },
+  { id: 'fusion', temp: 22500, name: 'Fusion', text: "Heat ×(peak temperature / 100) a second time." },
+  { id: 'core', temp: 27500, name: "As hot as a star's core", text: "Each ignition point multiplies ash by 3." },
 ];
+/** How many ignition points there are without the expansion. */
+export const BASE_POINTS = IGNITIONS.findIndex((p) => p.id === 'sun') + 1;
 const IGN_INDEX = Object.fromEntries(IGNITIONS.map((p, i) => [p.id, i]));
 
 export const ASH_UPGRADES = [
@@ -104,6 +113,7 @@ export const ASH_UPGRADES = [
 ];
 const ASH_BY_ID = Object.fromEntries(ASH_UPGRADES.map((u) => [u.id, u]));
 const MEMORY_POINTS = 6;
+const HOT_START_POINTS = 10; // the Eclipse upgrade Hot start
 const KEPT_BY_GLASS = ['banked', 'tender', 'hand', 'sweep'];
 
 export const GLASS_UPGRADES = [
@@ -151,6 +161,7 @@ export function defaults() {
     seen: {}, // things that stay visible once you've found them
     done: false,
     pending: D(0), // starlight given off since the last fold
+    given: D(0), // all the starlight this page has handed over this Eclipse
     foldBest: BAL.tempBase, // hottest this fold
     foldTime: 0,
     folds: 0,
@@ -161,10 +172,20 @@ export function defaults() {
 // Derived numbers
 // ---------------------------------------------------------------------------
 
-function pointsFromTemp(temp) {
+/** How many ignition points count: the six past the sun need the Star forge. */
+export function pointCap(state) {
+  return state.eclipse.exp.cinder ? IGNITIONS.length : BASE_POINTS;
+}
+
+function pointsFromTemp(temp, cap = BASE_POINTS) {
   let n = 0;
-  while (n < IGNITIONS.length && temp >= IGNITIONS[n].temp) n++;
+  while (n < cap && temp >= IGNITIONS[n].temp) n++;
   return n;
+}
+
+/** How many of the Star forge's points a temperature has passed. */
+export function forgeDepth(temp) {
+  return pointsFromTemp(temp, IGNITIONS.length) - pointsFromTemp(temp, BASE_POINTS);
 }
 
 export function milestoneReached(c, id) {
@@ -207,8 +228,9 @@ export function calc(state) {
   const G = c.glassUp;
   const N = state.atlas.nodes;
 
-  let points = pointsFromTemp(c.peakTemp);
+  let points = pointsFromTemp(c.peakTemp, pointCap(state));
   if (A.memory) points = Math.max(points, MEMORY_POINTS);
+  if (state.eclipse.up.c_hot) points = Math.max(points, HOT_START_POINTS);
   const passed = (id) => points > IGN_INDEX[id];
 
   let kindlingPower = 1;
@@ -225,10 +247,10 @@ export function calc(state) {
   const bellowsBoost = 1 + flueStrength * c.feeds.flue;
   const bellowsMult = Decimal.pow(bellowsBase, c.feeds.bellows * bellowsBoost);
 
-  const ignitionBase = G.prism ? BAL.ignitionMultPrism : BAL.ignitionMult;
+  const ignitionBase = passed('plasma') ? 3 : G.prism ? BAL.ignitionMultPrism : BAL.ignitionMult;
   const ignitionMult = passed('coal') ? Decimal.pow(ignitionBase, points) : D(1);
 
-  const ashBedPower = A.deep ? BAL.ashBedPowerDeep : BAL.ashBedPower;
+  const ashBedPower = (A.deep ? BAL.ashBedPowerDeep : BAL.ashBedPower) + (state.eclipse.up.c_bed ? 0.15 : 0);
   const ashBed = c.totalAsh.add(1).pow(ashBedPower);
 
   // Embers only hold once there is ash to bed them in.
@@ -238,19 +260,19 @@ export function calc(state) {
   const embers = c.seen.embers ? Math.pow(1 + c.burnTime / emberSeconds, emberPower) : 1;
 
   const glassHeat = c.totalGlass.add(1).pow(BAL.glassHeatPower);
-  const selfFeed = passed('white') ? c.peakTemp / 100 : 1;
+  const selfFeed = passed('white') ? Math.pow(c.peakTemp / 100, passed('fusion') ? 2 : 1) : 1;
 
   let rate = D(0);
   if (c.lit) {
     rate = D(base).mul(bellowsMult).mul(ignitionMult).mul(ashBed).mul(glassHeat).mul(embers).mul(selfFeed);
-    if (c.damper) rate = rate.mul(Math.pow(BAL.damperHeat, c.damper));
+    if (c.damper) rate = rate.mul(Math.pow(BAL.damperHeat, c.damper * (passed('carbon') ? 2 : 1)));
     if (A.banked) rate = rate.mul(3);
     if (N.c_star) rate = rate.mul(state.atlas.total.add(1));
     if (N.r_drift) rate = rate.mul(state.tidewater.totalDriftwood.add(1).sqrt());
     if (N.r_timber) rate = rate.mul(Math.pow(1 + state.grove.foldBestTrees.add(1).log10().toNumber(), 2));
     if (N.r_works) rate = rate.mul(1 + state.clockwork.foldBestRate.add(1).log10().toNumber());
     if (N.r_crystal) rate = rate.mul(1 + state.hollow.foldBestCrystal.add(1).log10().toNumber());
-    rate = rate.mul(struckMult(state, 'cinder'));
+    rate = rate.mul(outsideMult(state, 'cinder'));
     if (passed('logs')) rate = rate.mul(2);
     if (G.lens) rate = rate.mul(BAL.lensMult);
   }
@@ -263,7 +285,8 @@ export function calc(state) {
   if (A.hot) ashMult = ashMult.mul(Math.pow(BAL.hotAshesPerPoint, points));
   if (passed('iron')) ashMult = ashMult.mul(Math.pow(c.peakTemp / 1000, 2));
   if (G.blown) ashMult = ashMult.mul(10);
-  if (c.damper) ashMult = ashMult.mul(Math.pow(BAL.damperAsh, -c.damper));
+  if (c.damper) ashMult = ashMult.mul(Math.pow(BAL.damperAsh, -c.damper * (passed('carbon') ? 2 : 1)));
+  if (passed('core')) ashMult = ashMult.mul(Math.pow(3, points));
   const canBurn = passed('charcoal') && c.burnHeat.gte(BAL.ashNeedsHeat);
   const ashGain = canBurn ? c.burnHeat.div(BAL.ashNeedsHeat).pow(BAL.ashRoot).mul(ashMult).floor() : D(0);
 
@@ -273,13 +296,15 @@ export function calc(state) {
   const canSmelt = passed('sand') && c.totalAsh.gte(BAL.glassNeedsAsh);
   // Glass that has had time to clear is worth more, which makes one long
   // smelt better than several hurried ones.
-  const settle = 1 + c.smeltTime / (BAL.settleSeconds / (G.cullet ? 2 : 1));
+  const settle = 1 + c.smeltTime / (BAL.settleSeconds / (G.cullet ? 2 : 1) / (state.eclipse.up.c_clear ? 5 : 1));
   const glassGain = canSmelt ? c.totalAsh.div(BAL.glassNeedsAsh).pow(BAL.glassRoot).mul(glassMult).mul(settle).floor() : D(0);
 
   // Starlight
   let shine = 0;
   if (c.foldBest >= BAL.endTemp) {
-    shine = Math.pow(2, (c.foldBest - BAL.endTemp) / BAL.shineStep) * (N.c_bright ? 3 : 1);
+    const reached = pointsFromTemp(c.foldBest, pointCap(state));
+    const step = reached > IGN_INDEX.halo ? 200 : reached > IGN_INDEX.blue ? 350 : BAL.shineStep;
+    shine = Math.pow(2, (c.foldBest - BAL.endTemp) / step) * (N.c_bright ? 3 : 1) * lightMult(state);
   }
 
   return {
@@ -341,12 +366,12 @@ export function feedAll(state) {
   return bought;
 }
 
-function resetBurn(c) {
+function resetBurn(c, keepEmbers = false) {
   c.heat = D(BAL.startHeat);
   c.burnHeat = D(0);
   c.feeds = { kindling: 0, bellows: 0, flue: 0 };
   c.peakTemp = BAL.tempBase;
-  c.burnTime = 0;
+  if (!keepEmbers) c.burnTime = 0;
   c.lit = !!c.ashUp.banked;
   if (!c.lit) c.heat = D(0);
 }
@@ -360,7 +385,7 @@ export function burnDown(state) {
   c.burns += 1;
   c.seen.embers = true;
   emit('burn', { gain: d.ashGain, time: c.burnTime });
-  resetBurn(c);
+  resetBurn(c, !!state.eclipse.up.c_embers);
   return true;
 }
 
@@ -393,7 +418,7 @@ export function smelt(state) {
     }
     c.ashUp = kept;
   }
-  resetBurn(c);
+  resetBurn(c, !!state.eclipse.up.c_embers);
   return true;
 }
 
@@ -420,6 +445,7 @@ export function fold(state) {
   fresh.bestPoints = c.bestPoints;
   fresh.done = c.done;
   fresh.folds = c.folds + 1;
+  fresh.given = c.given.add(gained);
   fresh.burns = c.burns;
   fresh.smelts = c.smelts;
   if (state.atlas.nodes.c_hands) {
@@ -456,7 +482,7 @@ export function tick(state, dt) {
   if (d.temp > c.peakTemp) c.peakTemp = d.temp;
   if (d.temp > c.bestTemp) c.bestTemp = d.temp;
 
-  const points = Math.max(pointsFromTemp(c.peakTemp), c.ashUp.memory ? MEMORY_POINTS : 0);
+  const points = Math.max(pointsFromTemp(c.peakTemp, pointCap(state)), c.ashUp.memory ? MEMORY_POINTS : 0, state.eclipse.up.c_hot ? HOT_START_POINTS : 0);
   while (c.bestPoints < points) {
     const p = IGNITIONS[c.bestPoints];
     c.bestPoints += 1;

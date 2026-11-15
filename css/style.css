@@ -20,6 +20,7 @@
   --crystal: #c7a6f0;
   --geode: #e39ab5;
   --storm: #8fb4ff;
+  --corona: #ffb86b;
   --fulg: #e8d9b0;
   --good: #9fd08a;
   --accent: var(--ember);
@@ -158,6 +159,7 @@ textarea.save {
   resize: vertical;
 }
 label.check { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+label.check select { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 5px; font: inherit; }
 dl.stats { display: grid; grid-template-columns: max-content 1fr; gap: 4px 18px; margin: 6px 0 0; }
 dl.stats dt { color: var(--muted); }
 dl.stats dd { margin: 0; }
@@ -259,3 +261,6 @@ kbd {
 .upgrade.target.aimed { cursor: default; border-color: var(--storm); background: #1a2030; }
 .upgrade.target.aimed .cost { color: var(--storm); }
 .upgrade.target .need { color: var(--muted); }
+
+/* Eclipse */
+.corona-accent { --accent: var(--corona); }

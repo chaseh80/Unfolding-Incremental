@@ -13,7 +13,7 @@ import { Decimal, D } from '../core/num.js';
 import { costAt, affordableLevel } from '../core/scaling.js';
 import { emit } from '../core/events.js';
 import { gather } from '../atlas.js';
-import { struckMult } from './links.js';
+import { outsideMult, lightMult } from './links.js';
 
 // ---------------------------------------------------------------------------
 // Balance
@@ -71,6 +71,11 @@ export const NODES = [
   { id: 'gear', row: 4, col: 2, cost: 8, name: 'Gear seam', text: "Crystal ×(powers of ten in Clockwork's best ticks per second this fold / 50)³." },
 
   { id: 'core', core: true, cost: 16, name: 'The core', text: 'Crystal ×100.' },
+
+  // The fifth row, from the abyss expansion. These make starlight, not crystal.
+  { id: 'sapphire', row: 5, col: 0, cost: 12, light: true, name: 'Star sapphire', text: 'All starlight ×1.3 per node you own.' },
+  { id: 'worms', row: 5, col: 1, cost: 12, light: true, name: 'Glow-worms', text: 'All starlight ×(1 + minutes since last dissolve)².' },
+  { id: 'starseam', row: 5, col: 2, cost: 12, light: true, name: 'Star seam', text: "All starlight ×(1 + powers of ten in Stormfront's biggest strike this fold)²." },
 ];
 const NODE_BY_ID = Object.fromEntries(NODES.map((n) => [n.id, n]));
 const AT = (row, col) => NODES.find((n) => n.row === row && n.col === col);
@@ -87,7 +92,15 @@ export const CHAMBERS = [
   { id: 'vault', crystal: 1.5e27, name: 'The vault', text: 'Geode gain ×3.' },
   { id: 'throat', crystal: 1.5e31, name: 'The throat', text: 'Unlocks the core.' },
   { id: 'heart', crystal: 1.2e33, name: 'The heart', text: 'Hollow starts to shine.' },
+  // The abyss expansion, bought with corona. These only count once it is owned.
+  { id: 'gallery', crystal: 1e90, name: 'The long gallery', text: 'Unlocks the fifth row.' },
+  { id: 'sump', crystal: 1e98, name: 'The sump', text: 'Each chamber multiplies crystal by 3 instead of 2.' },
+  { id: 'cathedral', crystal: 1e105, name: 'The cathedral', text: '+6 facets.' },
+  { id: 'narrows', crystal: 1e110, name: 'The narrows', text: 'Pick one more node in the first row.' },
+  { id: 'abyss', crystal: 1e114, name: 'The abyss', text: 'The core multiplies crystal by 1,000,000 instead of 100.' },
 ];
+/** How many chambers there are without the expansion. */
+export const BASE_CHAMBERS = CHAMBERS.findIndex((p) => p.id === 'heart') + 1;
 const CHAMBER_INDEX = Object.fromEntries(CHAMBERS.map((p, i) => [p.id, i]));
 
 const NEED_KINDS = {
@@ -133,6 +146,7 @@ export function defaults() {
     dissolveTime: 0,
     collapseTime: 0,
     bestChambers: 0,
+    abyssLight: 1, // what the fifth row multiplies all starlight by, worked out every tick
 
     geodes: D(0),
     totalGeodes: D(0), // this fold
@@ -152,10 +166,20 @@ export function defaults() {
 // The lattice
 // ---------------------------------------------------------------------------
 
-function chambersFrom(best) {
+/** How many chambers count: the five past the heart need the expansion. */
+export function chamberCap(state) {
+  return state.eclipse.exp.hollow ? CHAMBERS.length : BASE_CHAMBERS;
+}
+
+function chambersFrom(best, cap = BASE_CHAMBERS) {
   let n = 0;
-  while (n < CHAMBERS.length && best.gte(CHAMBERS[n].crystal)) n++;
+  while (n < cap && best.gte(CHAMBERS[n].crystal)) n++;
   return n;
+}
+
+/** How many of the abyss's chambers an amount of crystal has reached. */
+export function abyssDepth(best) {
+  return chambersFrom(best, CHAMBERS.length) - chambersFrom(best, BASE_CHAMBERS);
 }
 
 export function nodeCost(h, id) {
@@ -163,8 +187,11 @@ export function nodeCost(h, id) {
   return n.bridge && h.geodeUp.freebridge ? 0 : n.cost;
 }
 
-export function totalFacets(h) {
-  return h.facets + (h.geodeUp.spare ? BAL.spareFacets : 0);
+/** `state` is only needed for the Eclipse upgrade that adds facets. */
+export function totalFacets(h, state = null) {
+  return h.facets + (h.geodeUp.spare ? BAL.spareFacets : 0)
+    + (h.bestChambers > CHAMBER_INDEX.cathedral ? 6 : 0)
+    + (state && state.eclipse.up.h_facets ? 5 : 0);
 }
 
 export function spentFacets(h, nodes = h.nodes) {
@@ -173,13 +200,16 @@ export function spentFacets(h, nodes = h.nodes) {
   return spent;
 }
 
-export function firstRowPicks(h) {
-  return h.geodeUp.third ? 3 : h.geodeUp.second ? 2 : 1;
+/** `state` is only needed for the Eclipse upgrade that adds a pick. */
+export function firstRowPicks(h, state = null) {
+  const base = h.geodeUp.third ? 3 : h.geodeUp.second ? 2 : 1;
+  const more = (h.bestChambers > CHAMBER_INDEX.narrows ? 1 : 0) + (state && state.eclipse.up.h_pick ? 1 : 0);
+  return Math.min(3, base + more);
 }
 
-function rowOpen(h, n) {
+function rowOpen(h, n, state) {
   if (n.core) return !!h.seen.core;
-  if (n.bridge) return !!h.seen.bridges;
+  if (n.bridge) return !!h.seen.bridges || !!state.eclipse.up.h_bridge;
   if (n.row === 1) return true;
   return !!h.seen['row' + n.row];
 }
@@ -200,7 +230,7 @@ export function nodeState(state, id, nodes = state.hollow.nodes) {
   const h = state.hollow;
   const n = NODE_BY_ID[id];
   if (nodes[id]) return { owned: true };
-  if (!rowOpen(h, n)) return { locked: true, why: 'Not unlocked yet.' };
+  if (!rowOpen(h, n, state)) return { locked: true, why: 'Not unlocked yet.' };
   let why = '';
   if (n.core) {
     if (![0, 1, 2].some((c) => nodes[AT(4, c).id])) why = 'Needs a fourth-row node.';
@@ -208,14 +238,14 @@ export function nodeState(state, id, nodes = state.hollow.nodes) {
     if (!n.bridge.some((c) => nodes[AT(2, c).id])) why = 'Needs a second-row node next to it.';
   } else if (n.row === 1) {
     const picked = [0, 1, 2].filter((c) => nodes[AT(1, c).id]).length;
-    if (picked >= firstRowPicks(h)) why = `Only ${firstRowPicks(h)} from this row.`;
+    if (picked >= firstRowPicks(h, state)) why = `Only ${firstRowPicks(h, state)} from this row.`;
   } else if (n.row === 2) {
     if (!columnOpen(n.col, nodes)) why = `Needs ${AT(1, n.col).name} or a bridge.`;
   } else if (!nodes[AT(n.row - 1, n.col).id]) {
     why = `Needs ${AT(n.row - 1, n.col).name}.`;
   }
   if (why) return { blocked: true, why };
-  const left = totalFacets(h) - spentFacets(h, nodes);
+  const left = totalFacets(h, state) - spentFacets(h, nodes);
   if (nodeCost(h, id) > left) return { poor: true, why: '' };
   return { ok: true };
 }
@@ -250,11 +280,11 @@ export function calc(state, nodes = state.hollow.nodes) {
   const h = state.hollow;
   const U = h.geodeUp;
   const N = state.atlas.nodes;
-  const chambers = chambersFrom(h.bestCrystal);
+  const chambers = chambersFrom(h.bestCrystal, chamberCap(state));
   const passed = (id) => chambers > CHAMBER_INDEX[id];
 
   const owned = Object.keys(nodes).filter((id) => nodes[id]).length;
-  const facets = totalFacets(h);
+  const facets = totalFacets(h, state);
   const unspent = facets - spentFacets(h, nodes);
   const seams = seamValues(state);
 
@@ -267,18 +297,27 @@ export function calc(state, nodes = state.hollow.nodes) {
   if (nodes.flawless) worth.flawless = Math.pow(BAL.flawlessPer, Math.max(0, unspent));
   if (nodes.lens) worth.lens = Math.max(1, Math.pow(h.grown.add(1).log10().toNumber(), 2));
   if (nodes.resonance) worth.resonance = Math.pow(BAL.resonancePer, facets);
-  if (nodes.core) worth.core = BAL.coreMult;
+  if (nodes.core) worth.core = passed('abyss') ? 1e6 : BAL.coreMult;
   for (const id of SEAMS) if (nodes[id]) worth[id] = Math.pow(seams[id], U.seams ? 2 : 1);
 
   let lattice = D(1);
   for (const id of Object.keys(worth)) lattice = lattice.mul(worth[id]);
 
+  // The fifth row multiplies all starlight instead of crystal.
+  const light = {};
+  if (nodes.sapphire) light.sapphire = Math.pow(1.3, owned);
+  if (nodes.worms) light.worms = Math.pow(1 + h.dissolveTime / 60, 2);
+  if (nodes.starseam) light.starseam = Math.pow(1 + state.stormfront.foldBestStrike.add(1).log10().toNumber(), 2);
+  let abyssLight = 1;
+  for (const id of Object.keys(light)) abyssLight *= light[id];
+  abyssLight = Math.min(1e150, abyssLight);
+
   const geodeBed = h.totalGeodes.add(1).pow(U.rich ? BAL.geodeBedPowerRich : BAL.geodeBedPower);
-  const chamberMult = passed('blue') ? Math.pow(BAL.chamberMult, chambers) : 1;
+  const chamberMult = passed('blue') ? Math.pow(passed('sump') ? 3 : BAL.chamberMult, chambers) : 1;
   let other = D(1);
   if (U.polish) other = other.mul(3);
   if (N.h_star) other = other.mul(h.given.add(1));
-  other = other.mul(struckMult(state, 'hollow'));
+  other = other.mul(outsideMult(state, 'hollow'));
   const facetMult = Decimal.pow(BAL.facetMult, facets);
   const rate = h.open ? lattice.mul(facetMult).mul(geodeBed).mul(chamberMult).mul(other) : D(0);
 
@@ -288,13 +327,13 @@ export function calc(state, nodes = state.hollow.nodes) {
   const canCollapse = passed('hall') && h.grown.gte(BAL.geodeNeedsCrystal);
   const geodeGain = canCollapse ? h.grown.div(BAL.geodeNeedsCrystal).pow(BAL.geodeRoot).mul(geodeMult).floor() : D(0);
 
-  const far = CHAMBERS[CHAMBERS.length - 1].crystal;
+  const far = CHAMBERS[CHAMBER_INDEX.heart].crystal;
   let shine = 0;
   if (h.foldBestCrystal.gte(far)) {
-    shine = BAL.shineBase * Math.pow(2, h.foldBestCrystal.div(far).log10().toNumber() / BAL.shineDecades) * (N.h_bright ? 3 : 1);
+    shine = BAL.shineBase * Math.pow(2, h.foldBestCrystal.div(far).log10().toNumber() / BAL.shineDecades) * (N.h_bright ? 3 : 1) * lightMult(state);
   }
 
-  return { chambers, owned, facets, unspent, seams, worth, lattice, facetMult, geodeBed, chamberMult, other, rate, pressure, canCollapse, geodeGain, shine };
+  return { chambers, owned, facets, unspent, seams, worth, light, abyssLight, lattice, facetMult, geodeBed, chamberMult, other, rate, pressure, canCollapse, geodeGain, shine };
 }
 
 // ---------------------------------------------------------------------------
@@ -344,7 +383,7 @@ export function dissolve(state) {
   h.nodes = {};
   h.order = [];
   h.template = [];
-  h.crystal = D(0);
+  if (!state.eclipse.up.h_keep) h.crystal = D(0);
   h.dissolveTime = 0;
   return true;
 }
@@ -430,7 +469,7 @@ export function tick(state, dt) {
   if (h.crystal.gt(h.bestCrystal)) h.bestCrystal = h.crystal;
   if (h.crystal.gt(h.foldBestCrystal)) h.foldBestCrystal = h.crystal;
 
-  const chambers = chambersFrom(h.bestCrystal);
+  const chambers = chambersFrom(h.bestCrystal, chamberCap(state));
   while (h.bestChambers < chambers) {
     const p = CHAMBERS[h.bestChambers];
     h.bestChambers += 1;
@@ -442,6 +481,8 @@ export function tick(state, dt) {
   if (h.bestChambers > CHAMBER_INDEX.lake) h.seen.bridges = true;
   if (h.bestChambers > CHAMBER_INDEX.pipes) h.seen.row4 = true;
   if (h.bestChambers > CHAMBER_INDEX.throat) h.seen.core = true;
+  if (h.bestChambers > CHAMBER_INDEX.gallery) h.seen.row5 = true;
+  h.abyssLight = d.abyssLight;
   if (!h.shining && h.bestChambers > CHAMBER_INDEX.heart) {
     h.shining = true;
     state.atlas.seen = true;

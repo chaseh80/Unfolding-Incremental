@@ -1,8 +1,9 @@
 // Everything you see while looking at Clockwork.
 import { h, setText, setShown, setClass, confirmBox } from './dom.js';
 import { format, formatInt, formatMult, formatTime } from '../core/num.js';
-import { startBox, upgradeGrid, feedRow, subTabs, pointList, resetBox, breakdown, shineNotice } from './parts.js';
+import { startBox, upgradeGrid, feedRow, subTabs, pointList, resetBox, breakdown, shineNotice, real, speedTag } from './parts.js';
 import * as cw from '../worlds/clockwork.js';
+import { paceMult } from '../worlds/links.js';
 
 const amount = (x) => format(x, 1);
 const whole = (x) => formatInt(x);
@@ -10,6 +11,7 @@ const whole = (x) => formatInt(x);
 export function buildClockwork(game) {
   const S = () => game.state;
   const K = () => game.state.clockwork;
+  const pace = () => paceMult(game.state, 'clockwork');
 
   function tryRewind() {
     const k = K();
@@ -36,7 +38,12 @@ export function buildClockwork(game) {
 
   function updateStatus(k, d) {
     setText(tickAmount, amount(k.ticks));
-    setText(rate, k.wound ? `+${amount(d.rate)} per second` : 'Not wound');
+    // Chimes are measured against the movement's own rate, so when the world
+    // runs faster that is shown as it is, with the real gain beside it.
+    const p = pace();
+    if (!k.wound) setText(rate, 'Not wound');
+    else if (p > 1) setText(rate, `Movement ${amount(d.rate)} per second. Gaining ${amount(real(d.rate, p))} per second${speedTag(p)}`);
+    else setText(rate, `+${amount(d.rate)} per second`);
   }
 
   // --- Train -------------------------------------------------------------
@@ -111,11 +118,36 @@ export function buildClockwork(game) {
   const sources = breakdown('Tick sources', ['Train', 'Wear-in', 'Springs', 'Chimes', 'Other'], 'Ticks per second');
   const shine = shineNotice('Clockwork');
 
+  // Complications, from the long case expansion. Fitting is always done by hand.
+  const slots = [];
+  for (let i = 0; i < cw.COMPLICATION_SLOTS; i++) {
+    const select = h('select', { onchange: () => cw.fitComplication(S(), i, select.value) },
+      h('option', { value: '' }, 'Empty'), cw.COMPLICATIONS.map((c) => h('option', { value: c.id }, c.name)));
+    const worth = h('div', { class: 'worth' });
+    slots.push({ select, worth, el: h('div', { class: 'socket' }, h('div', { class: 'label' }, `Slot ${i + 1}`), select, worth) });
+  }
+  const compBox = h('div', { class: 'box' }, h('h3', {}, 'Complications'),
+    h('p', { class: 'desc' }, 'One of each at most. A complication runs in while the movement runs, through rewinds. Swapping one starts it again.'),
+    cw.COMPLICATIONS.map((c) => h('p', { class: 'desc' }, `${c.name}: ${c.text}`)),
+    h('div', { class: 'train' }, slots.map((s) => s.el)));
+
+  function updateComplications(k) {
+    const open = cw.complicationSlots(S());
+    setShown(compBox, open > 0);
+    slots.forEach((s, i) => {
+      setShown(s.el, i < open);
+      if (i >= open) return;
+      if (document.activeElement !== s.select && s.select.value !== k.fitted[i]) s.select.value = k.fitted[i];
+      setText(s.worth, k.fitted[i] ? `Fitted ${formatTime(k.fittedTime[i])}. ${formatMult(cw.complicationWorth(S(), k.fitted[i]))}` : '');
+    });
+  }
+
   const trainPanel = h('div', { class: 'panel brass-accent' },
-    shine.el, start, trainBox, gearRows.map((r) => r.row.el), buyAll, wearBox, trainRewind.el, sources.el);
+    shine.el, start, trainBox, compBox, gearRows.map((r) => r.row.el), buyAll, wearBox, trainRewind.el, sources.el);
 
   function updateTrainPanel(k, d) {
-    shine.set(d.shine, k.pending);
+    updateComplications(k);
+    shine.set(d.shine, k.pending, pace());
     setShown(start, !k.wound);
     setShown(trainBox, k.wound);
     if (k.wound) updateTrain(k, d);
@@ -185,7 +217,7 @@ export function buildClockwork(game) {
     setText(springText, `Wound ${whole(k.totalSprings)} springs${k.folds > 0 ? ' this fold' : ''}. Multiplies ticks by ${format(d.springBed, 2)}.`);
     const self = !!S().atlas.nodes.k_spring;
     setShown(selfText, self);
-    if (self) setText(selfText, `Gaining ${format(d.springGain.mul(cw.BAL.passiveSpringPerSecond), 1)} springs per second.`);
+    if (self) setText(selfText, `Gaining ${format(d.springGain.mul(cw.BAL.passiveSpringPerSecond * pace()), 1)} springs per second.`);
     updateRewind(springRewind, k, d);
     springGrid.update();
   }
@@ -194,7 +226,7 @@ export function buildClockwork(game) {
 
   const tabs = subTabs([
     { id: 'train', label: 'Train', panel: trainPanel, update: updateTrainPanel, open: () => true },
-    { id: 'chimes', label: 'Chimes', panel: chimesPanel, update: (k, d) => chimes.update(k.bestChimes, d.chimes), open: (k) => k.bestChimes >= 1 },
+    { id: 'chimes', label: 'Chimes', panel: chimesPanel, update: (k, d) => chimes.update(k.bestChimes, d.chimes, cw.chimeCap(S())), open: (k) => k.bestChimes >= 1 },
     { id: 'springs', label: 'Springs', panel: springPanel, update: updateSprings, open: (k) => !!k.seen.rewind },
   ], {
     current: () => S().ui.clockworkTab,

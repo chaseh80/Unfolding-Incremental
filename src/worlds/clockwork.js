@@ -11,7 +11,7 @@ import { Decimal, D } from '../core/num.js';
 import { costAt, affordableLevel } from '../core/scaling.js';
 import { emit } from '../core/events.js';
 import { gather } from '../atlas.js';
-import { struckMult } from './links.js';
+import { outsideMult, lightMult } from './links.js';
 
 // ---------------------------------------------------------------------------
 // Balance
@@ -83,7 +83,25 @@ export const CHIMES = [
   { id: 'seven', rate: 6e23, name: 'Seven o\'clock', text: 'Wear-in builds 2× faster.' },
   { id: 'eight', rate: 8e28, name: 'Eight o\'clock', text: 'Spring gain ×2.' },
   { id: 'midnight', rate: 1e36, name: 'Midnight', text: 'Clockwork starts to shine.' },
+  // The long case expansion, bought with corona. These only count once it is owned.
+  { id: 'quarter', rate: 1e76, name: 'The quarter chime', text: 'Unlocks complications, with 1 slot.' },
+  { id: 'half', rate: 1e78, name: 'The half chime', text: 'Each chime multiplies ticks by 2 instead of 1.5.' },
+  { id: 'three4', rate: 1e80, name: 'Three quarters', text: '+1 complication slot.' },
+  { id: 'carillon', rate: 1e94, name: 'The carillon', text: 'Complications run in 2× faster.' },
+  { id: 'grand', rate: 1e102, name: 'The grand strike', text: '+1 complication slot.' },
 ];
+/** How many chimes there are without the expansion. */
+export const BASE_CHIMES = CHIMES.findIndex((p) => p.id === 'midnight') + 1;
+
+// What can be fitted in a complication slot, one of each at most. Each gets
+// stronger the longer it has been fitted, and starts again when it is swapped.
+export const COMPLICATIONS = [
+  { id: 'tourbillon', name: 'Tourbillon', text: 'Ticks ×(1 + minutes fitted)².', power: 2 },
+  { id: 'orrery', name: 'Orrery', text: 'All starlight ×(1 + minutes fitted)².', power: 2 },
+  { id: 'chrono', name: 'Chronograph', text: 'Spring gain ×(1 + minutes fitted)².', power: 2 },
+  { id: 'moon', name: 'Moon phase', text: "Cinder's heat and Tidewater's salt ×(1 + minutes fitted).", power: 1 },
+];
+export const COMPLICATION_SLOTS = 3;
 const CHIME_INDEX = Object.fromEntries(CHIMES.map((p, i) => [p.id, i]));
 
 // What an upgrade needs from an older world, measured over that world's
@@ -133,6 +151,10 @@ export function defaults() {
     ticks: D(0),
     windTicks: D(0), // ticks made since the last rewind
     train: ['brass', 'brass', 'brass', '', '', '', '', ''],
+    fitted: ['', '', ''], // the complication in each slot
+    fittedTime: [0, 0, 0], // seconds each has been fitted, kept through rewinds
+    orreryLight: 1, // what the orrery multiplies all starlight by, worked out every tick
+    moonMult: 1, // what the moon phase multiplies Cinder and Tidewater by
     levels: { brass: 0, fly: 0, gov: 0, ratchet: 0, esc: 0, worm: 0 },
     windTime: 0,
     bestRate: D(0), // best ticks per second this winding
@@ -211,10 +233,51 @@ export function evaluate(train, strength, idlerBoost) {
   return { kind, stopped, mult, power, product };
 }
 
-function chimesFrom(best) {
+/** How many chimes count: the five past Midnight need the expansion. */
+export function chimeCap(state) {
+  return state.eclipse.exp.clockwork ? CHIMES.length : BASE_CHIMES;
+}
+
+function chimesFrom(best, cap = BASE_CHIMES) {
   let n = 0;
-  while (n < CHIMES.length && best.gte(CHIMES[n].rate)) n++;
+  while (n < cap && best.gte(CHIMES[n].rate)) n++;
   return n;
+}
+
+/** How many of the long case's chimes a rate has struck. */
+export function longCaseDepth(best) {
+  return chimesFrom(best, CHIMES.length) - chimesFrom(best, BASE_CHIMES);
+}
+
+/** How many complication slots are open. They stay open once reached. */
+export function complicationSlots(state) {
+  const k = state.clockwork;
+  if (!state.eclipse.exp.clockwork) return 0;
+  if (k.bestChimes > CHIME_INDEX.grand) return 3;
+  if (k.bestChimes > CHIME_INDEX.three4) return 2;
+  return k.bestChimes > CHIME_INDEX.quarter ? 1 : 0;
+}
+
+/** What a complication is worth, if it is fitted in an open slot. */
+export function complicationWorth(state, id) {
+  const k = state.clockwork;
+  const slot = k.fitted.indexOf(id);
+  if (slot < 0 || slot >= complicationSlots(state)) return 1;
+  const kind = COMPLICATIONS.find((c) => c.id === id);
+  return Math.min(1e150, Math.pow(1 + k.fittedTime[slot] / 60, kind.power));
+}
+
+/** Fit a complication in a slot. Whatever was there, and its time, is lost. */
+export function fitComplication(state, slot, id) {
+  const k = state.clockwork;
+  if (!(slot >= 0 && slot < complicationSlots(state))) return false;
+  if (id !== '' && !COMPLICATIONS.some((c) => c.id === id)) return false;
+  if (k.fitted[slot] === id) return false;
+  // One of each: fitting it here takes it out of anywhere else.
+  if (id !== '') for (let i = 0; i < k.fitted.length; i++) if (k.fitted[i] === id) { k.fitted[i] = ''; k.fittedTime[i] = 0; }
+  k.fitted[slot] = id;
+  k.fittedTime[slot] = 0;
+  return true;
 }
 
 export function socketCount(k) {
@@ -261,11 +324,13 @@ export function calc(state, trainOverride = null) {
   const k = state.clockwork;
   const U = k.springUp;
   const N = state.atlas.nodes;
-  const chimes = chimesFrom(k.bestRate);
+  const E = state.eclipse.up;
+  let chimes = chimesFrom(k.bestRate, chimeCap(state));
+  if (E.k_chime) chimes = Math.max(chimes, chimesFrom(k.foldBestRate, chimeCap(state)));
   const passed = (id) => chimes > CHIME_INDEX[id];
 
   const strength = strengths(k);
-  const idlerBoost = U.jewels ? BAL.idlerBoostJewels : BAL.idlerBoost;
+  const idlerBoost = (U.jewels ? BAL.idlerBoostJewels : BAL.idlerBoost) + (E.k_idler ? 0.1 : 0);
   const sockets = socketCount(k);
   const train = liveTrain(k, trainOverride || k.train);
   const run = evaluate(train, strength, idlerBoost);
@@ -273,27 +338,29 @@ export function calc(state, trainOverride = null) {
   const wearPower = U.runin ? BAL.wearPowerRunin : BAL.wearPower;
   const wear = k.seen.rewind ? Math.pow(1 + k.windTime / (BAL.wearSeconds / (passed('seven') ? 2 : 1)), wearPower) : 1;
   const springBed = k.totalSprings.add(1).pow(BAL.springBedPower);
-  const chimeMult = passed('six') ? Math.pow(BAL.chimeMult, chimes) : 1;
+  const chimeMult = passed('six') ? Math.pow(passed('half') ? 2 : BAL.chimeMult, chimes) : 1;
+  const tourbillon = complicationWorth(state, 'tourbillon');
   let other = D(1);
   if (U.oil) other = other.mul(3);
   if (N.k_star) other = other.mul(k.given.add(1));
   if (N.r_parts) other = other.mul(Math.max(1, state.cinder.foldBest / 1000));
   if (N.r_crystal) other = other.mul(1 + state.hollow.foldBestCrystal.add(1).log10().toNumber());
-  other = other.mul(struckMult(state, 'clockwork'));
+  other = other.mul(outsideMult(state, 'clockwork')).mul(tourbillon);
   const rate = k.wound ? run.product.mul(wear).mul(springBed).mul(chimeMult).mul(other) : D(0);
 
   let springMult = D(1);
   if (passed('eight')) springMult = springMult.mul(2);
+  springMult = springMult.mul(complicationWorth(state, 'chrono'));
   const canRewind = passed('four') && k.windTicks.gte(BAL.springNeedsTicks);
   const springGain = canRewind ? k.windTicks.div(BAL.springNeedsTicks).pow(BAL.springRoot).mul(springMult).floor() : D(0);
 
-  const far = CHIMES[CHIMES.length - 1].rate;
+  const far = CHIMES[CHIME_INDEX.midnight].rate;
   let shine = 0;
   if (k.foldBestRate.gte(far)) {
-    shine = BAL.shineBase * Math.pow(2, k.foldBestRate.div(far).log10().toNumber() / BAL.shineDecades) * (N.k_bright ? 3 : 1);
+    shine = BAL.shineBase * Math.pow(2, k.foldBestRate.div(far).log10().toNumber() / BAL.shineDecades) * (N.k_bright ? 3 : 1) * lightMult(state);
   }
 
-  return { chimes, strength, idlerBoost, sockets, train, run, wear, wearPower, springBed, chimeMult, other, rate, canRewind, springGain, shine };
+  return { chimes, tourbillon, strength, idlerBoost, sockets, train, run, wear, wearPower, springBed, chimeMult, other, rate, canRewind, springGain, shine };
 }
 
 // ---------------------------------------------------------------------------
@@ -363,11 +430,11 @@ export function levelAll(state) {
   return bought;
 }
 
-function resetWinding(k) {
+function resetWinding(k, keepLevels = false, keepWear = false) {
   k.ticks = D(0);
   k.windTicks = D(0);
-  k.levels = { brass: 0, fly: 0, gov: 0, ratchet: 0, esc: 0, worm: 0 };
-  k.windTime = 0;
+  if (!keepLevels) k.levels = { brass: 0, fly: 0, gov: 0, ratchet: 0, esc: 0, worm: 0 };
+  if (!keepWear) k.windTime = 0;
   k.bestRate = D(0);
 }
 
@@ -379,7 +446,7 @@ export function rewind(state) {
   k.totalSprings = k.totalSprings.add(d.springGain);
   k.rewinds += 1;
   emit('rewind', { gain: d.springGain, time: k.windTime });
-  resetWinding(k);
+  resetWinding(k, !!state.eclipse.up.k_levels, !!state.eclipse.up.k_wear);
   return true;
 }
 
@@ -401,6 +468,7 @@ export function fold(state) {
   const fresh = defaults();
   fresh.seen = k.seen;
   fresh.train = k.train;
+  fresh.fitted = k.fitted.slice(); // the fitting is kept; the running in starts again
   fresh.bestChimes = k.bestChimes;
   fresh.shining = k.shining;
   fresh.folds = k.folds + 1;
@@ -436,7 +504,14 @@ export function tick(state, dt) {
   if (d.rate.gt(k.bestRate)) k.bestRate = d.rate;
   if (d.rate.gt(k.foldBestRate)) k.foldBestRate = d.rate;
 
-  const chimes = chimesFrom(k.bestRate);
+  // Complications run in while the movement runs.
+  const slots = complicationSlots(state);
+  const runIn = d.chimes > CHIME_INDEX.carillon ? 2 : 1;
+  for (let i = 0; i < slots; i++) if (k.fitted[i]) k.fittedTime[i] += dt * runIn;
+  k.orreryLight = complicationWorth(state, 'orrery');
+  k.moonMult = complicationWorth(state, 'moon');
+
+  const chimes = chimesFrom(k.bestRate, chimeCap(state));
   while (k.bestChimes < chimes) {
     const p = CHIMES[k.bestChimes];
     k.bestChimes += 1;

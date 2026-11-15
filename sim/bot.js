@@ -6,6 +6,7 @@ import { serialize } from '../src/core/save.js';
 import { drain } from '../src/core/events.js';
 import { D, format, formatTime } from '../src/core/num.js';
 import * as atlas from '../src/atlas.js';
+import * as ecl from '../src/eclipse.js';
 import * as cinder from '../src/worlds/cinder.js';
 import * as tw from '../src/worlds/tidewater.js';
 import * as grove from '../src/worlds/grove.js';
@@ -33,7 +34,7 @@ function shouldFold(state, world, every) {
   // enough to open Tidewater and make the second run of Cinder quicker.
   if (a.total.eq(0)) return w.pending.gte(5);
   const next = nextNode(state);
-  if (next && a.starlight.add(w.pending.floor()).gte(next.cost)) return true;
+  if (next && a.starlight.add(w.pending.floor()).gte(atlas.costOf(state, next))) return true;
   return w.pending.gte(a.total.max(1));
 }
 
@@ -76,6 +77,8 @@ function actCinder(state, every) {
 function actTidewater(state, every) {
   if (!state.atlas.nodes.tidewater) return;
   const t = state.tidewater;
+  // Plant any empty reef plot, salt and starlight turn about, and leave it to grow.
+  for (let i = 0; i < tw.reefPlots(state); i++) if (!t.reef[i]) tw.plantCoral(state, i, i % 2 === 0 ? 'brain' : 'fan');
   if (!t.open) tw.openSluice(state);
   for (let u = cheapest(tw.DRIFT_UPGRADES, t.driftUp); u && tw.buyDriftUpgrade(state, u.id); u = cheapest(tw.DRIFT_UPGRADES, t.driftUp));
 
@@ -83,7 +86,7 @@ function actTidewater(state, every) {
 
   // What one long tide would need to carry to pass the next strandline.
   let d = tw.calc(state);
-  const next = tw.STRANDLINES[d.lines];
+  const next = d.lines < tw.lineCap(state) ? tw.STRANDLINES[d.lines] : null;
   const pushBrine = next ? D(next.salt).div(d.strength).mul(1.15) : null;
   const pushTime = () => pushBrine.mul(d.fill.add(d.dry)).div(d.fill.mul(d.dry)).toNumber();
   const pushing = () => !!next && pushTime() <= tw.BAL.maxPeriod;
@@ -128,6 +131,8 @@ function actTidewater(state, every) {
 function actGrove(state, every) {
   if (!state.atlas.nodes.grove) return;
   const g = state.grove;
+  // Heartwood is set by hand. A fifth of the sap is a middling choice.
+  if (grove.heartOpen(state) && g.heartShare === 0) grove.setHeartShare(state, 0.2);
   if (!g.planted) grove.plant(state);
   for (let u = cheapest(grove.SEED_UPGRADES, g.seedUp); u && grove.buySeedUpgrade(state, u.id); u = cheapest(grove.SEED_UPGRADES, g.seedUp));
   for (let u = cheapest(grove.LOAM_UPGRADES, g.loamUp); u && grove.buyLoamUpgrade(state, u.id); u = cheapest(grove.LOAM_UPGRADES, g.loamUp));
@@ -215,6 +220,8 @@ function arrangeTrain(state) {
 function actClockwork(state, every, ctx) {
   if (!state.atlas.nodes.clockwork) return;
   const k = state.clockwork;
+  // Fit any open complication slot and leave it to run in.
+  ['orrery', 'tourbillon', 'chrono'].slice(0, cw.complicationSlots(state)).forEach((id, i) => { if (!k.fitted[i]) cw.fitComplication(state, i, id); });
   if (!k.wound) cw.wind(state);
   cw.levelAll(state);
   for (;;) {
@@ -257,7 +264,8 @@ function growLattice(state, nodes) {
       if (n.bridge || !hollow.nodeState(state, n.id, nodes).ok) continue;
       // The seed bed makes no crystal itself. Count it as worth about what
       // the facets it frees would buy.
-      const gain = n.id === 'seedbed' ? 8 : hollow.calc(state, { ...nodes, [n.id]: true }).rate.div(base).toNumber();
+      // Fifth-row nodes make starlight, not crystal: always worth having.
+      const gain = n.light ? 1e6 : n.id === 'seedbed' ? 8 : hollow.calc(state, { ...nodes, [n.id]: true }).rate.div(base).toNumber();
       if (!(gain > 1.0001)) continue;
       const score = Math.log(gain) / Math.max(1, hollow.nodeCost(state.hollow, n.id));
       if (!best || score > best.score) best = { id: n.id, score };
@@ -345,9 +353,10 @@ function actStormfront(state, every, ctx) {
     if (s.held >= holdFor(s.aim) - 1e-9) { sf.strike(state); sf.buyAllFeeds(state); ctx.aimed = ctx.time; }
   } else if (sinceAimed >= Math.max(45, every, 2 * d.holdMax)) {
     const tens = (x) => 1 + x.add(1).log10().toNumber();
-    let pick = WORLD_ORDER.find(isFresh) || (isFresh('mast') && s.frontTime >= 3 * d.holdMax ? 'mast' : null);
+    let pick = WORLD_ORDER.find(isFresh) || (isFresh('sky') ? 'sky' : null) || (isFresh('mast') && s.frontTime >= 3 * d.holdMax ? 'mast' : null);
     if (!pick && sinceAimed >= Math.max(every, 4 * d.holdMax)) {
-      if (sf.targetOpen(state, 'mast') && sf.mastMult(s, d.sizeAfter(holdFor('mast'), true)) >= sf.mastMult(s) * 1.4) pick = 'mast';
+      if (sf.targetOpen(state, 'sky') && sf.skyMult(state, d.sizeAfter(holdFor('sky'), true)) >= sf.skyMult(state) * 1.4) pick = 'sky';
+      else if (sf.targetOpen(state, 'mast') && sf.mastMult(s, d.sizeAfter(holdFor('mast'), true)) >= sf.mastMult(s) * 1.4) pick = 'mast';
       else {
         let bestGain = 1.5;
         for (const id of WORLD_ORDER) {
@@ -375,6 +384,65 @@ function actStormfront(state, every, ctx) {
     const stalled = s.frontTime > 300 && d.fulgGain.gte(s.totalFulgurite.mul(0.5));
     if (s.aim === 'ground' && (buysNext || bigJump || stalled)) sf.pass(state);
   }
+}
+
+// One sensible order to buy corona upgrades in. A real player will choose
+// differently; this is only so that runs can be timed.
+const CORONA_ORDER = ['totality', 'dusk', 'dawn', 'bright', 'hands', 'cheap', 'auto_atlas',
+  'auto_fold',
+  'p_stormfront', 'p_grove', 'p_clockwork', 'routes', 'p_hollow', 'passive', 'p_tidewater', 'p_cinder',
+  't_pool', 'c_hot', 'g_stands', 'k_levels', 'h_pick', 's_peal', 't_moon', 'h_facets', 's_over', 'h_bridge', 'h_keep', 's_mast', 'k_chime', 'k_idler', 'k_wear', 'c_embers', 'g_age', 't_lines', 'c_bed', 'g_seed', 't_kelp', 'c_clear', 'g_full', 'paid', 'scar',
+  'umbra', 'blaze'];
+
+// Someone who is mostly away wants the game to run itself before it runs faster.
+const AWAY_FIRST = ['totality', 'auto_atlas', 'hands'];
+const AWAY_ORDER = AWAY_FIRST.concat(CORONA_ORDER.filter((id) => !AWAY_FIRST.includes(id)));
+
+// Spend corona on the cheapest thing available, expansions included.
+function actEclipse(state, ctx, every) {
+  const e = state.eclipse;
+  // Everything that could be bought next, and the cheapest of it. Among
+  // equals, the order above decides. An expansion is one more thing on the
+  // list, at its price.
+  const want = () => {
+    const options = [];
+    (every >= 600 ? AWAY_ORDER : CORONA_ORDER).forEach((id, order) => {
+      if (e.up[id]) return;
+      const general = ecl.UPGRADES.find((u) => u.id === id);
+      if (general) {
+        if (ecl.tierOpen(e, general.cost)) options.push({ cost: general.cost, order, buy: () => ecl.buyUpgrade(state, id) });
+        return;
+      }
+      const world = ecl.WORLD_UPGRADES.find((u) => u.id === id);
+      if (ecl.worldUpgradesOpen(e)) options.push({ cost: ecl.worldCost(e, world.world), order, buy: () => ecl.buyWorldUpgrade(state, id) });
+    });
+    const x = ecl.EXPANSIONS.find((k) => !e.exp[k.world]);
+    if (x) options.push({ cost: ecl.expansionCost(e), order: -1, buy: () => ecl.buyExpansion(state, x.world) });
+    options.sort((a, b) => a.cost - b.cost || a.order - b.order);
+    return options[0] || null;
+  };
+  for (let u = want(); u && u.buy(); u = want());
+  // Someone away leaves the Bookbinder off until worlds rebuild in minutes.
+  // Before that, a world it folds is dark for most of the next look, and
+  // an Eclipse needs all six shining at once.
+  if (every >= 600 && e.up.auto_fold && ctx.keepFold === undefined) ecl.setAuto(state, 'fold', !!e.up.umbra);
+  // Wait while corona is still coming quickly, and eclipse when the next one
+  // is slow to arrive: a twentieth of the run so far, but never less than a
+  // minute or more than five. This is one way to play; eclipsing early and
+  // often is another.
+  const d = state.atlas.nodes.eclipse ? ecl.calc(state) : null;
+  if (!d || !d.ready) { ctx.gainSeen = null; ctx.lookRate = null; return; }
+  if (!ctx.gainSeen || !d.gain.eq(ctx.gainSeen)) { ctx.gainSeen = d.gain; ctx.gainAt = e.time; }
+  if (ctx.hold) return; // a test asked for this run to be pushed without an Eclipse
+  // Someone who only looks in now and then can't watch corona tick up.
+  // On each look they work out corona per hour for the run so far, and
+  // eclipse once that is lower than it was on their last look.
+  if (every >= 600) {
+    const perHour = d.gain.toNumber() / Math.max(1, e.time / 3600);
+    if (ctx.lookRate && perHour < ctx.lookRate) { ecl.eclipse(state); ctx.lookRate = null; ctx.gainSeen = null; } else ctx.lookRate = perHour;
+    return;
+  }
+  if (e.time - ctx.gainAt > Math.min(300, Math.max(60, 0.05 * e.time))) { ecl.eclipse(state); ctx.gainSeen = null; }
 }
 
 /**
@@ -420,7 +488,20 @@ export function simulate({ every = 3, hours = 24, until = null, keepLog = false,
       if (worlds.clockwork) actClockwork(state, every, ctx);
       if (worlds.hollow) actHollow(state, every, ctx);
       if (worlds.stormfront) actStormfront(state, every, ctx);
+      actEclipse(state, ctx, every);
       nextAct = t + every;
+    }
+    // A test can ask for some worlds to be tended every few seconds while
+    // the player is otherwise away, to see whose hand actions hold a run up.
+    if (ctx.tend && t >= (ctx.nextTend || 0)) {
+      ctx.time = t;
+      if (ctx.tend.includes('cinder')) actCinder(state, 3);
+      if (ctx.tend.includes('tidewater')) actTidewater(state, 3);
+      if (ctx.tend.includes('grove')) actGrove(state, 3);
+      if (ctx.tend.includes('clockwork')) actClockwork(state, 3, ctx);
+      if (ctx.tend.includes('hollow')) actHollow(state, 3, ctx);
+      if (ctx.tend.includes('stormfront')) actStormfront(state, 3, ctx);
+      ctx.nextTend = t + 3;
     }
     tick(state, dt);
     t += dt;
@@ -452,6 +533,8 @@ export function simulate({ every = 3, hours = 24, until = null, keepLog = false,
       if (e.type === 'pass' && state.stormfront.fronts === 1) { log(`first front passes (+${format(e.gain, 0)} fulgurite)`); mark('firstPass'); }
       if (e.type === 'fulgUpgrade' && marks['fulg:' + e.id] === undefined) { log(`fulgurite upgrade: ${e.id}`); mark('fulg:' + e.id); }
       if (e.type === 'strike' && e.aim !== 'ground' && marks['aim:' + e.aim] === undefined) { log(`first strike on ${e.aim}`); mark('aim:' + e.aim); }
+      if (e.type === 'eclipse') { log(`ECLIPSE ${e.count} (+${format(e.gain, 0)} corona after ${formatTime(e.time)})`); mark('eclipse:' + e.count); marks['coronaGain:' + e.count] = `${format(e.gain, 0)} (starlight ${format(e.starlight, 0)}, fire ${Math.floor(e.fire)}, tide ${format(e.tide, 0)})`; }
+      if (e.type === 'coronaUpgrade') { log(`corona upgrade: ${e.id}`); mark('corona:' + e.id); }
       if (e.type === 'fold') { log(`FOLD ${e.world} (+${format(e.gain, 0)} starlight after ${formatTime(e.time)})`); mark(`fold:${e.world}`); }
       if (e.type === 'atlas') { log(`ATLAS: ${e.name}`); mark('atlas:' + e.id); }
     }

@@ -6,6 +6,7 @@ import { emit } from './core/events.js';
 
 export const GROUPS = [
   { id: 'pages', name: 'Worlds', text: '' },
+  { id: 'sky', name: 'Sky', text: '' },
   { id: 'cinder', name: 'Cinder', text: '' },
   { id: 'tidewater', name: 'Tidewater', text: '' },
   { id: 'grove', name: 'Grove', text: '' },
@@ -21,7 +22,7 @@ export const NODES = [
   { id: 'clockwork', group: 'pages', cost: 6e5, needs: 'grove', name: 'Clockwork', text: "Unlocks the fourth world." },
   { id: 'hollow', group: 'pages', cost: 1.5e9, needs: 'clockwork', name: 'Hollow', text: "Unlocks the fifth world." },
   { id: 'stormfront', group: 'pages', cost: 1.2e13, needs: 'hollow', name: 'Stormfront', text: "Unlocks the sixth world." },
-  { id: 'archive', group: 'pages', cost: 3e18, needs: 'stormfront', name: 'Archive', text: "Unlocks the seventh world." },
+  { id: 'eclipse', group: 'sky', cost: 3e18, needs: 'stormfront', name: 'Eclipse', text: "Unlocks Eclipse." },
 
   { id: 'c_hands', group: 'cinder', cost: 2, name: 'Hands that stay', text: "Keep banked coals, fire-tender, bellows-hand and flue-sweep when you fold Cinder." },
   { id: 'c_star', group: 'cinder', cost: 2, name: 'Starlit hearth', text: "Heat ×(total starlight + 1)." },
@@ -82,6 +83,11 @@ export function has(state, id) {
   return !!state.atlas.nodes[id];
 }
 
+/** What a node costs right now. An Eclipse upgrade makes everything cheaper. */
+export function costOf(state, node) {
+  return node.cost / (state.eclipse.discount || 1);
+}
+
 export function available(state, node) {
   return !node.needs || has(state, node.needs);
 }
@@ -89,8 +95,8 @@ export function available(state, node) {
 export function buy(state, id) {
   const node = BY_ID[id];
   const a = state.atlas;
-  if (!node || a.nodes[id] || !available(state, node) || a.starlight.lt(node.cost)) return false;
-  a.starlight = a.starlight.sub(node.cost);
+  if (!node || a.nodes[id] || !available(state, node) || a.starlight.lt(costOf(state, node))) return false;
+  a.starlight = a.starlight.sub(costOf(state, node));
   a.nodes[id] = true;
   emit('atlas', { id, name: node.name });
   return true;

@@ -1,8 +1,9 @@
 // Everything you see while looking at Tidewater.
 import { h, setText, setShown, confirmBox } from './dom.js';
 import { Decimal, format, formatInt, formatMult } from '../core/num.js';
-import { setWidth, startBox, upgradeGrid, feedRow, subTabs, pointList, resetBox, breakdown, shineNotice, dial } from './parts.js';
+import { setWidth, startBox, upgradeGrid, feedRow, subTabs, pointList, resetBox, breakdown, shineNotice, dial, real, speedTag } from './parts.js';
 import * as tw from '../worlds/tidewater.js';
+import { paceMult } from '../worlds/links.js';
 
 const amount = (x) => format(x, 1);
 const whole = (x) => formatInt(x);
@@ -11,6 +12,7 @@ const LINES = tw.STRANDLINES;
 
 export function buildTidewater(game) {
   const S = () => game.state;
+  const pace = () => paceMult(game.state, 'tidewater');
   const T = () => game.state.tidewater;
 
   function tryStorm() {
@@ -54,7 +56,7 @@ export function buildTidewater(game) {
       setText(tideLine, '');
       return;
     }
-    setText(rate, `About ${amount(d.income)} per second`);
+    setText(rate, `About ${amount(real(d.income, pace()))} per second${speedTag(pace())}`);
     const inHigh = t.phase < d.high;
     setText(tideLine, inHigh
       ? `Tide in. Turns in ${secs(d.high - t.phase)}.`
@@ -116,6 +118,30 @@ export function buildTidewater(game) {
   const kelpText = h('p', { class: 'desc' });
   const kelpBox = h('div', { class: 'box' }, h('h3', {}, 'Kelp'), kelpText);
 
+  // The reef, from the expansion. Planting is always done by hand.
+  const plots = [];
+  for (let i = 0; i < tw.REEF_PLOTS; i++) {
+    const select = h('select', { onchange: () => tw.plantCoral(S(), i, select.value) },
+      h('option', { value: '' }, 'Empty'), tw.CORALS.map((c) => h('option', { value: c.id }, c.name)));
+    const worth = h('div', { class: 'worth' });
+    plots.push({ select, worth, el: h('div', { class: 'socket' }, h('div', { class: 'label' }, `Plot ${i + 1}`), select, worth) });
+  }
+  const reefBox = h('div', { class: 'box' }, h('h3', {}, 'Reef'),
+    h('p', { class: 'desc' }, 'Coral grows by 1 every tide. Replanting a plot starts it again.'),
+    tw.CORALS.map((c) => h('p', { class: 'desc' }, `${c.name}: ${c.text}`)),
+    h('div', { class: 'train' }, plots.map((p) => p.el)));
+
+  function updateReef(t) {
+    const open = tw.reefPlots(S());
+    setShown(reefBox, open > 0);
+    plots.forEach((p, i) => {
+      setShown(p.el, i < open);
+      if (i >= open) return;
+      if (document.activeElement !== p.select && p.select.value !== t.reef[i]) p.select.value = t.reef[i];
+      setText(p.worth, t.reef[i] ? `Grown ${t.reefAge[i]} tides. ${formatMult(tw.coralWorth(t.reefAge[i]))}` : '');
+    });
+  }
+
   const shoreStorm = resetBox({ title: 'Storm', accent: 'drift-accent', onClick: tryStorm, hotkey: 'B' });
   const driftStorm = resetBox({ title: 'Storm', accent: 'drift-accent', onClick: tryStorm, hotkey: 'B' });
 
@@ -133,10 +159,11 @@ export function buildTidewater(game) {
   const shine = shineNotice('Tidewater');
 
   const shorePanel = h('div', { class: 'panel tide-accent' },
-    shine.el, sluice, tideBox, Object.values(rows).map((r) => r.el), buyAll, kelpBox, shoreStorm.el, worth.el);
+    shine.el, sluice, tideBox, Object.values(rows).map((r) => r.el), buyAll, kelpBox, reefBox, shoreStorm.el, worth.el);
 
   function updateShore(t, d) {
-    shine.set(d.shine, t.pending);
+    updateReef(t);
+    shine.set(d.shine, t.pending, pace());
     setShown(sluice, !t.open);
     setShown(tideBox, t.open);
     if (t.open) updateTide(t, d);
@@ -200,7 +227,7 @@ export function buildTidewater(game) {
     setText(driftText, `Washed up ${whole(t.totalDriftwood)} driftwood${t.folds > 0 ? ' this fold' : ''}. Multiplies salt by ${format(d.driftBed, 2)}.`);
     const washing = !!S().atlas.nodes.t_storm;
     setShown(washText, washing);
-    if (washing) setText(washText, `Washing up ${format(d.driftGain.mul(tw.BAL.passiveDriftPerSecond), 1)} driftwood per second.`);
+    if (washing) setText(washText, `Washing up ${format(d.driftGain.mul(tw.BAL.passiveDriftPerSecond * pace()), 1)} driftwood per second.`);
     updateStorm(driftStorm, t, d);
     driftGrid.update();
   }
@@ -209,7 +236,7 @@ export function buildTidewater(game) {
 
   const tabs = subTabs([
     { id: 'shore', label: 'Shore', panel: shorePanel, update: updateShore, open: () => true },
-    { id: 'lines', label: 'Strandlines', panel: linesPanel, update: (t, d) => lines.update(t.bestLines, d.lines), open: (t) => t.bestLines >= 1 },
+    { id: 'lines', label: 'Strandlines', panel: linesPanel, update: (t, d) => lines.update(t.bestLines, d.lines, tw.lineCap(S())), open: (t) => t.bestLines >= 1 },
     { id: 'drift', label: 'Driftwood', panel: driftPanel, update: updateDrift, open: (t) => !!t.seen.storm },
   ], {
     current: () => S().ui.tidewaterTab,

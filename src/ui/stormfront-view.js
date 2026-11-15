@@ -1,17 +1,18 @@
 // Everything you see while looking at Stormfront.
 import { h, setText, setShown, setClass, setDisabled, confirmBox } from './dom.js';
 import { format, formatInt, formatMult, formatTime } from '../core/num.js';
-import { setWidth, startBox, upgradeGrid, feedRow, subTabs, pointList, resetBox, breakdown, shineNotice } from './parts.js';
-import { struckPower } from '../worlds/links.js';
+import { setWidth, startBox, upgradeGrid, feedRow, subTabs, pointList, resetBox, breakdown, shineNotice, real, speedTag } from './parts.js';
+import { struckPower, paceMult } from '../worlds/links.js';
 import * as sf from '../worlds/stormfront.js';
 
 const amount = (x) => format(x, 1);
 const whole = (x) => formatInt(x);
 const POWER = { 2: '²', 3: '³', 4: '⁴', 5: '⁵' };
-const AT = { ground: 'the ground', mast: 'the mast' };
+const AT = { ground: 'the ground', mast: 'the mast', sky: 'the sky' };
 
 export function buildStormfront(game) {
   const S = () => game.state;
+  const pace = () => paceMult(game.state, 'stormfront');
   const F = () => game.state.stormfront;
 
   function tryPass() {
@@ -39,7 +40,7 @@ export function buildStormfront(game) {
 
   function updateStatus(c, d) {
     setText(thunderAmount, amount(c.thunder));
-    setText(rate, c.open ? `Charge +${amount(d.rate)} per second` : 'Clear sky');
+    setText(rate, c.open ? `Charge +${amount(real(d.rate, pace()))} per second${speedTag(pace())}` : 'Clear sky');
   }
 
   // --- Storm -------------------------------------------------------------
@@ -87,6 +88,7 @@ export function buildStormfront(game) {
 
   function bonusFor(c, id, record) {
     if (id === 'mast') return sf.mastMult(c, record);
+    if (id === 'sky') return sf.skyMult(S(), record);
     return record.lte(0) ? 1 : Math.pow(1 + record.add(1).log10().toNumber(), struckPower(S()));
   }
 
@@ -107,11 +109,13 @@ export function buildStormfront(game) {
         setShown(k.record, false);
         continue;
       }
-      setText(k.text, id === 'mast'
+      setText(k.text, id === 'sky'
+        ? `All starlight ×(1 + powers of ten in the biggest strike here)${POWER[sf.skyPower(S())]}.`
+        : id === 'mast'
         ? `Charge ×(1 + powers of ten in the biggest strike here)${mastPower}.`
         : `${k.t.what} ×(1 + powers of ten in the biggest strike here)${worldPower}.`);
       const record = sf.recordAt(c, id);
-      const what = id === 'mast' ? 'Charge' : k.t.what;
+      const what = id === 'sky' ? 'All starlight' : id === 'mast' ? 'Charge' : k.t.what;
       let line = record.gt(0)
         ? `Biggest strike ${amount(record)}. ${what} ${formatMult(bonusFor(c, id, record))}.`
         : 'Not struck yet.';
@@ -156,7 +160,7 @@ export function buildStormfront(game) {
     shine.el, start, cloudBox, aimBox, sf.FEEDS.map((f) => feeds[f.id].el), stormPass.el, sources.el);
 
   function updateStorm(c, d) {
-    shine.set(d.shine, c.pending);
+    shine.set(d.shine, c.pending, pace());
     setShown(start, !c.open);
     setShown(cloudBox, c.open);
     setShown(aimBox, c.open && !!c.seen.mast);
@@ -183,7 +187,7 @@ export function buildStormfront(game) {
       d.bed.gt(1) ? formatMult(d.bed) : null,
       d.pealMult > 1 ? formatMult(d.pealMult) : null,
       d.other.gt(1.001) ? formatMult(d.other) : null,
-    ], amount(d.rate));
+    ], amount(real(d.rate, pace())), pace());
   }
 
   // --- Peals -------------------------------------------------------------
@@ -196,7 +200,7 @@ export function buildStormfront(game) {
 
   function updatePeals(c, d) {
     setText(bestText, `Biggest strike this front: ${amount(c.bestStrike)}.`);
-    peals.update(c.bestPeals, d.peals);
+    peals.update(c.bestPeals, d.peals, sf.pealCap(S()));
   }
 
   // --- Fulgurite ---------------------------------------------------------
@@ -223,7 +227,7 @@ export function buildStormfront(game) {
     setText(fulgText, `Found ${whole(c.totalFulgurite)} fulgurite${c.folds > 0 ? ' this fold' : ''}. Multiplies charge by ${format(d.bed, 2)}.`);
     const falling = !!S().atlas.nodes.s_fulg;
     setShown(fallText, falling);
-    if (falling) setText(fallText, `Gaining ${format(d.fulgGain.mul(sf.BAL.passiveFulgPerSecond), 1)} fulgurite per second.`);
+    if (falling) setText(fallText, `Gaining ${format(d.fulgGain.mul(sf.BAL.passiveFulgPerSecond * pace()), 1)} fulgurite per second.`);
     updatePass(fulgPass, c, d);
     fulgGrid.update();
   }

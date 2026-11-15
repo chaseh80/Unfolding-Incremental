@@ -13,7 +13,25 @@ Six worlds are playable:
 
 A world that has been pushed far enough starts to shine. Folding it in the **Atlas** gathers its starlight and resets that one world. Starlight buys new worlds, automation, and routes between worlds.
 
-Reaching the end of what exists takes about 35 hours of attentive play, or about 40 if you look in every five minutes.
+Above the Atlas is **Eclipse**. Once every world is shining at the same time, the whole atlas can be eclipsed: every world, all starlight and every Atlas upgrade reset, and you get corona. The game is then played again in the same order, one world unlocking after another, with whatever corona has bought.
+
+Corona adds up over Eclipses. An Eclipse gives (1 + P ÷ 8)³ corona, rounded down, where P is how many powers of ten of starlight the run gathered past 3e18. So eclipsing as soon as possible gives 1, about 120 times as much starlight gives 2, 9 powers of ten give 10, and 19 give 40. Because it counts powers of ten, a run left twice as long is worth roughly twice as much, not many times more, and eclipsing early and often or waiting for more are both reasonable ways to play. Nothing multiplies corona.
+
+Corona buys three kinds of thing, none of them ever lost:
+
+- **Upgrades for every world**, at 1, 2, 5 and 12 corona. Owning one at a price opens the next price. They make worlds run faster, multiply starlight, cut Atlas costs and keep Atlas upgrades through an Eclipse. Two of them work the Atlas for you: the **Cartographer** (2 corona) buys Atlas upgrades, cheapest first, and the **Bookbinder** (5) folds a world once it has gathered as much starlight as it has given this Eclipse, and never for less than that world's Starlit upgrade costs. Both have switches on the Atlas page; the Bookbinder can be set to 3×, 10× or 100× and switched off for single worlds. Everything inside a world is still done by hand.
+- **Upgrades for one world.** Each world's cost 5, 10, 20, 40 and 80 corona, by how many of that world's are owned. One per world is speed; the rest change how that world plays. Every world has all five.
+- **Expansions**: new content for one world. The price depends on how many you own, whichever world it is for: 5, 30, 2,400, 3,600, 5,000 and 7,500 corona. The jump after the second is because the worlds' own upgrades, bought in between, raise corona income about twentyfold. An expansion pays for the next one by letting its world go further and raising starlight. Every world has one:
+  - **Star forge** (Cinder): six more ignition points past the sun, from 7,500°C to 27,500°C. Two of them make Cinder's starlight double every 350°C and then every 200°C, instead of every 500°C.
+  - **The reef** (Tidewater): five more strandlines, from 1e70 to 1e102 salt, and a reef of up to six plots planted by hand with coral for salt, starlight or driftwood. Coral grows with every tide. Two of the strandlines make Tidewater's starlight double faster.
+  - **The old wood** (Grove): five more stands, from 1e62 to 1e76 trees, and heartwood. A slider sends a share of all sap to heartwood, which is kept through seedfall and fire. Each power of ten of heartwood is a ring; rings multiply sap, and from the second stand each ring multiplies all starlight by 1.03, later 1.05.
+  - **The long case** (Clockwork): five more chimes, from 1e76 to 1e102 ticks per second, and up to three slots for complications, one of each kind at most: tourbillon (ticks), orrery (all starlight), chronograph (springs) and moon phase (Cinder's heat and Tidewater's salt). Each grows with the minutes it has been fitted and starts again if swapped.
+  - **The abyss** (Hollow): five more chambers, from 1e90 to 1e114 crystal, and a fifth row of the lattice. Its three nodes multiply all starlight: by 1.3 per node owned, by (1 + minutes since last dissolve)², or by Stormfront's biggest strike.
+  - **The high sky** (Stormfront): five more peals, from a strike of 1e76 to 1e106, and the sky as something to aim at. The biggest strike to hit the sky multiplies all starlight by (1 + its powers of ten)², rising to the power 4.
+
+The first Eclipse takes about 35 hours of attentive play, or about 40 if you look in every five minutes. From there, buying the cheapest thing available each time, Totality, the six 2-corona upgrades and the Star forge take about 19 more hours, and the other five expansions come between 1h 19m and 4h apart: about two days and eighteen hours in all. Someone who looks in every half hour takes three days to the first Eclipse and about nine and a half to the last expansion. Past the last expansion there is nothing left to buy.
+
+A world an Eclipse upgrade makes run faster shows its rates as they pass in real time, with the speed beside them. Clocks on its page (time since a reset, a held strike, tide length) are the world's own and run that much faster.
 
 ## Playing it
 
@@ -50,7 +68,7 @@ The game logic doesn't touch the page, so Node can play it far faster than real 
 node sim/run.js
 ```
 
-prints a timeline of the whole game. Options: `--every 300` (look in every five minutes), `--quiet` (summary only), `--hours 30`, and `--tidewater`, `--grove`, `--clockwork`, `--hollow` or `--stormfront` to play one world on its own.
+prints a timeline of the whole game. Options: `--every 300` (look in every five minutes), `--quiet` (summary only), `--hours 30`, `--eclipses 3` (carry on to the third Eclipse; give it a large `--hours`), and `--tidewater`, `--grove`, `--clockwork`, `--hollow` or `--stormfront` to play one world on its own.
 
 ```bash
 node sim/calibrate.js stormfront
@@ -72,6 +90,28 @@ node sim/snapshot.js 140 > sim/out/save.txt
 
 writes a save from 140 minutes into a simulated run. Add a world's name (`node sim/snapshot.js 60 clockwork`) for that world alone. Paste it into Options, or open the game at `?devsave=sim/out/save.txt` to load it without touching your real save.
 
+```bash
+node sim/checkpoint.js
+node sim/expansion.js hollow
+```
+
+The first plays the game once to a late point (a fresh run just after the reef is bought) and saves it to `sim/out/checkpoint-late.json`. The second starts from that point with every corona upgrade owned and pushes one run for two hours, with and without one world's expansion, printing what the run would be worth at half an hour, one hour and two. It takes under a minute, against several for replaying the whole game. Add `--only` to skip the run without the expansion, or `hollow.coreMult=1000` to try a different number. Rebuild the checkpoint only when something before it changes.
+
+```bash
+node sim/sequence.js --after 2
+```
+
+plays on from the saved point until every expansion is bought, buying the way the stand-in player does, and prints how long each took after the one before. This is the test for how the expansions sit together. `eclipse.expansionCosts=5,30,2400,3600,5000,7500` tries other prices. `node sim/checkpoint.js` also prints the times up to the reef.
+
+There are two stand-in players. The usual one acts every few seconds. Add `--afk` to `checkpoint.js` and `sequence.js` for one who looks in every half hour: it has its own saved point (`sim/out/checkpoint-late-afk.json`), and on each look it eclipses once the run's corona per hour has started to fall. It buys the Cartographer and Keepsakes before any speed, and leaves the Bookbinder switched off until it owns Umbra. Its whole-game run takes about ten minutes to simulate. `sequence.js` also takes `--no-fold`, `--no-atlas` and `--fold-at 10` to compare the automatic folder and buyer.
+
+```bash
+node sim/away.js build
+node sim/away.js 40 tend=hollow,stormfront
+```
+
+looks at what the away player is waiting on early in the Eclipse phase. The first line saves the point where it has just bought Keepsakes. The second plays on for 40 hours with those worlds tended every few seconds, as if everything done by hand in them were automatic, and prints when it eclipsed. `up=passive,routes` grants corona upgrades first.
+
 `?speed=20` runs the clock twenty times faster.
 
 ### Things learned while tuning
@@ -90,6 +130,23 @@ writes a save from 140 minutes into a simulated run. Add a world's name (`node s
 - If the basic action needs a click every half minute, automate it almost at once. Stormfront strikes the ground by itself after the first full strike.
 - The stand-in player has to be reasonable at a world's hand-worked control, or the numbers get tuned for a bad player. Its first tries at aiming Stormfront's strikes stalled the world for an hour at a time.
 - A bonus one world gives another should survive the giving world's fold. Stormfront's strike records on older worlds were first wiped by folding it, which froze all five.
+- To price a reset of the whole game, measure it: play to the reset once, then replay from that checkpoint with each reward switched on. A second Eclipse with no rewards took 32.5 hours against 35 for the first. Starlight ×3 made it 24. Having every world open from the start made it 12, which was dropped because a repeat should follow the same path as the first run.
+- A boost to how fast a world runs is the easiest reward to keep even between worlds and to predict: a run takes the sum of each world's time divided by its speed. Multipliers on a world's resource barely move the time, because its milestones are spaced over hundreds of powers of ten.
+- The currency of a big reset should depend on one thing, how far the run got. Corona is a root of starlight and nothing multiplies it. Anything meant to raise it has to do so by raising starlight, which keeps every upgrade honest about what it is worth.
+- A reset currency that is a root of something growing by powers of ten grows exponentially with waiting. With corona as the twelfth root of starlight, a run pushed one hour after the Star forge was worth 28 and two hours 127, so any price was either out of reach or trivial. Counting the powers of ten instead (corona = (1 + powers ÷ 8)³) makes two hours worth about twice one, and short resets and long waits come out close: 12 corona every 15 minutes against 79 in two hours.
+- Do not remove a way of playing to fix a balance problem. Corona was briefly a record of the best run, so that repeated short resets gave nothing; it was reverted, and the formula above fixed the actual problem.
+- Measure a repeated reset by the time to each purchase, not by the number of resets. A stand-in player that waited for more whenever more was coming sat in its first run for four days and bought everything at once; cap its patience at a few minutes.
+- Starlight that grows with a world's size, next to a star node that multiplies that world by starlight, feeds itself. Tidewater's reef at "doubles every half power of ten" ran away to 1e25 corona; at one power of ten it holds, but still overshoots.
+- To see what one expansion is worth, compare like with like: start from the same checkpoint with every upgrade owned and push the same length of time with and without it. The first test of Grove's expansion looked twenty times too strong only because the stand-in player had bought everything else in between.
+- A multiplier on all starlight is far stronger than it reads, because the first two worlds' star upgrades multiply them by all starlight. Grove's rings at ×1.2 each gave 1,698 corona in half an hour; ×1.03 is in line with the other expansions.
+- Do not replay settled parts of the game to test something late. Save a checkpoint and test only the new thing from it; balance the whole once everything is built.
+- Spread an expansion's milestones against what the world reaches with the expansion owned, not without it. Each one's first thresholds were cleared in the first half hour until they were moved.
+- Find out what actually drives income before pricing against it. A pushed run with every corona upgrade owned is worth 180 corona after five minutes; with only some, 17 after twenty. The worlds' own upgrades, costing 5 to 80, mattered far more than the expansions, and a ×4 price step per expansion had assumed the opposite.
+- A stand-in player that buys in a fixed order can hide that. Buying the cheapest thing first is closer to what people do and showed the real shape: upgrades in two hours, then expansions.
+- Speed upgrades do almost nothing for a player who is away. After an Eclipse, a run needs dozens of actions by hand, and someone looking in every half hour gets one batch per look however fast the worlds run. Late in the Eclipse phase those actions were mostly folds and Atlas purchases: automating both took the away player's Eclipses from about ten hours to an hour and a half.
+- Early in the Eclipse phase they are not. With only Totality owned, the away player's run takes a day and a half with or without the Atlas automated, and keeping the passive-gain upgrades doesn't change it. Tending any one world every few seconds saves a few hours; tending all six brings Eclipses to every hour and a half. The wait is spread over the hand actions inside every world, most of it in the last three.
+- An automatic folder that compares a world's gathered starlight with all starlight only ever folds the brightest world. Four worlds are multiplied by the starlight they themselves have handed over, so the rest starved: a pushed hour was worth 750 corona against 3,909 by hand. Comparing each world with what it has given was worth 2,300 after fifteen minutes against 1,177 by hand, and a little less than by hand after an hour, which leaves a reason to switch it off for a long push.
+- An automatic folder also needs a floor. Folding a world the moment it has 5 starlight throws away an hour of rebuilding early on, and an Eclipse needs all six shining at once. The floor is the price of the world's own Starlit upgrade.
 - Tune effects first, then calibrate costs to time targets.
 - The calibrator suits currencies that flow in smoothly. Atlas costs are set by hand from the timeline.
 
@@ -118,6 +175,27 @@ For a player acting every few seconds:
 | Older worlds struck | 28h 26m to 28h 41m |
 | Stormfront shines | 32h 23m |
 | Stormfront's first fold | 32h 25m |
-| Archive (not built) | about 35h |
+| Eclipse unlocked, first Eclipse (1 corona) | about 35h |
+| Totality, all six 2-corona upgrades and the Star forge (5 corona) | 18h 54m later |
+| Bookbinder bought (5) | 1h 15m later |
+| The reef bought (30) | 2h 49m later |
+| The old wood bought (2,400) | 2h 57m later |
+| The long case bought (3,600) | 1h 43m later |
+| The abyss bought (5,000) | 1h 19m later |
+| The high sky bought (7,500) | 2h 10m later, about 2d 18h in all |
+| Two hours past the last expansion | six Eclipses, worth 1,959 to 2,829 corona each |
+| **Looking in every half hour:** first Eclipse | 3d 0h |
+| Totality, all six 2-corona upgrades and the Star forge | 3d 10h later |
+| Bookbinder | 17h 30m later |
+| The reef | 10h 30m later |
+| The old wood | 14h later |
+| The long case | 13h 30m later |
+| The abyss | 9h 30m later |
+| The high sky | 7h 30m later, about 9d 11h in all |
+| One run pushed with every upgrade owned, forge and reef only | about 275 / 397 / 505 at 30 min / 1h / 2h |
+| The same with the old wood (Grove) | 399 / 596 / 1,036 at 30 min / 1h / 2h |
+| With the long case (Clockwork) instead | 326 / 772 / 1,023 |
+| With the abyss (Hollow) instead | 277 / 905 / 1,139 |
+| With the high sky (Stormfront) instead | 275 / 397 / 969 |
 
-Looking in every five minutes, the end comes at about 40h.
+Looking in every five minutes, the first Eclipse comes at about 40h. Past the first Eclipse the table counts time to each purchase, not Eclipses, because how many it takes depends on how long a player waits. The stand-in player buys the cheapest thing available each time, expansions included (ties go by `CORONA_ORDER` in `sim/bot.js`), and eclipses once the next corona is more than a few minutes away. The times shift by an hour or so with small changes, because corona arrives in lumps.

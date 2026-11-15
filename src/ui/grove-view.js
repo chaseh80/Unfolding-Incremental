@@ -1,8 +1,9 @@
 // Everything you see while looking at Grove.
 import { h, setText, setShown, confirmBox } from './dom.js';
 import { Decimal, format, formatInt, formatMult, formatTime } from '../core/num.js';
-import { setWidth, startBox, upgradeGrid, subTabs, pointList, resetBox, milestoneList, breakdown, shineNotice, dial } from './parts.js';
+import { setWidth, startBox, upgradeGrid, subTabs, pointList, resetBox, milestoneList, breakdown, shineNotice, dial, real, speedTag } from './parts.js';
 import * as grove from '../worlds/grove.js';
+import { paceMult } from '../worlds/links.js';
 
 const amount = (x) => format(x, 1);
 const whole = (x) => formatInt(x);
@@ -17,6 +18,7 @@ function eta(seconds) {
 
 export function buildGrove(game) {
   const S = () => game.state;
+  const pace = () => paceMult(game.state, 'grove');
   const G = () => game.state.grove;
 
   function tryFall() {
@@ -73,7 +75,7 @@ export function buildGrove(game) {
       return;
     }
     setText(roomLine, `Room: ${amount(d.room)}`);
-    setText(sapLine, `+${amount(d.sap)} sap per second`);
+    setText(sapLine, `+${amount(real(d.sap, pace()))} sap per second${speedTag(pace())}`);
     setWidth(fullFill, d.fullness);
     setText(fullLabel, `${Math.floor(d.fullness * 100)}% full`);
   }
@@ -86,7 +88,10 @@ export function buildGrove(game) {
   const shareHint = h('p', { class: 'note hint' });
   const split = dial({ min: 0, max: 100, onInput: (v) => grove.setShares(S(), null, v / 100) });
   const seed = dial({ min: 0, max: 100, onInput: (v) => grove.setShares(S(), v / 100, null) });
-  const shareBox = h('div', { class: 'box' }, h('h3', {}, 'Sap'), shareText, shareHint, split.el, seed.el);
+  // Heartwood, from the old wood expansion. Its share is always set by hand.
+  const heart = dial({ min: 0, max: 90, onInput: (v) => grove.setHeartShare(S(), v / 100) });
+  const heartText = h('p', { class: 'desc' });
+  const shareBox = h('div', { class: 'box' }, h('h3', {}, 'Sap'), shareText, shareHint, split.el, seed.el, heart.el, heartText);
 
   function levelBox(title) {
     const count = h('span', { class: 'count' });
@@ -102,7 +107,7 @@ export function buildGrove(game) {
         setText(text, desc);
         setWidth(fill, have.div(next).toNumber());
         setText(label, flow.gt(0)
-          ? `Next level at ${amount(next)} sap, in ${eta(next.sub(have).div(flow).toNumber())}.`
+          ? `Next level at ${amount(next)} sap, in ${eta(next.sub(have).div(flow).toNumber() / pace())}.`
           : `Next level at ${amount(next)} sap. No sap going here.`);
       },
     };
@@ -132,7 +137,13 @@ export function buildGrove(game) {
     shine.el, plant, shareBox, rootBox.el, canopyBox.el, ageBox, woodFall.el, rich.el);
 
   function updateWood(g, d) {
-    shine.set(d.shine, g.pending);
+    heart.set({ shown: d.hasHeart, value: Math.round(g.heartShare * 100), text: `Heartwood gets ${Math.round(g.heartShare * 100)}% of all sap, before the rest is split.` });
+    setShown(heartText, d.hasHeart);
+    if (d.hasHeart) {
+      const light = grove.ringLight(S());
+      setText(heartText, `Heartwood ${amount(g.heartSap)}: ${format(d.rings, 1)} rings, one for each power of ten. Kept through seedfall and fire. Sap ${formatMult(d.heartMult)}.${light > 1 ? ` All starlight ${formatMult(light)}.` : ''}`);
+    }
+    shine.set(d.shine, g.pending, pace());
     setShown(plant, !g.planted);
     for (const el of [shareBox, rootBox.el, canopyBox.el]) setShown(el, g.planted);
     if (g.planted) {
@@ -156,7 +167,7 @@ export function buildGrove(game) {
         `×${roomStep} room per level. Each level slows growth by ${Math.round((slowStep - 1) * 100)}%.`,
         g.rootSap, d.nextRoot, d.sap.mul(d.rootsShare * d.rootReach));
       canopyBox.set(d.canopyLevel,
-        `+${Math.round((canopyStep - 1) * 100)}% growth speed per level. Doubling time with room to spare: ${eta(Math.LN2 / d.rate)}.`,
+        `+${Math.round((canopyStep - 1) * 100)}% growth speed per level. Doubling time with room to spare: ${eta(Math.LN2 / d.rate / pace())}.`,
         g.canopySap, d.nextCanopy, d.sap.mul(d.canopyShare * d.canopyReach));
     }
     setShown(ageBox, g.planted && !!g.seen.age);
@@ -171,7 +182,7 @@ export function buildGrove(game) {
       d.loamBed.gt(1) ? formatMult(d.loamBed) : null,
       d.standMult > 1 ? formatMult(d.standMult) : null,
       other.gt(1.001) ? formatMult(other) : null,
-    ], format(d.richness, 2));
+    ], format(real(d.richness, pace()), 2), pace());
   }
 
   // --- Stands ------------------------------------------------------------
@@ -204,7 +215,7 @@ export function buildGrove(game) {
     setText(seedText, `Gathered ${whole(g.totalSeeds)} seeds${since}. Multiplies sap by ${format(d.seedBed, 2)}.`);
     const raining = grove.seedsFallAlone(S());
     setShown(rainText, raining);
-    if (raining) setText(rainText, `Gaining ${format(d.seedGain.mul(grove.BAL.passiveSeedPerSecond), 1)} seeds per second.`);
+    if (raining) setText(rainText, `Gaining ${format(d.seedGain.mul(grove.BAL.passiveSeedPerSecond * pace()), 1)} seeds per second.`);
     updateFall(seedFall, g, d);
     seedGrid.update();
   }
@@ -250,7 +261,7 @@ export function buildGrove(game) {
 
   const tabs = subTabs([
     { id: 'wood', label: 'Wood', panel: woodPanel, update: updateWood, open: () => true },
-    { id: 'stands', label: 'Stands', panel: standsPanel, update: (g, d) => stands.update(g.bestStands, d.stands), open: (g) => g.bestStands >= 1 },
+    { id: 'stands', label: 'Stands', panel: standsPanel, update: (g, d) => stands.update(g.bestStands, d.stands, grove.standCap(S())), open: (g) => g.bestStands >= 1 },
     { id: 'seeds', label: 'Seeds', panel: seedPanel, update: updateSeeds, open: (g) => !!g.seen.seed },
     { id: 'loam', label: 'Loam', panel: loamPanel, update: updateLoam, open: (g) => !!g.seen.fire },
   ], {

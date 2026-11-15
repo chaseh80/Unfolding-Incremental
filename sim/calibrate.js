@@ -82,7 +82,7 @@ if (which === 'tidewater') {
   const drift = { groynes: 15, digger: 18, tables: 22, watcher: 27, beds: 33, cuts: 40, seawall: 48, holdfast: 57, flats: 67, pull: 78 };
   sim = { worlds: { tidewater: true }, setup: (s) => { s.atlas.nodes.tidewater = true; } };
   const items = [];
-  for (const p of tw.STRANDLINES) items.push({ label: 'line ' + p.id, target: lines[p.id], mark: 'line:' + p.id, obj: p, field: 'salt', group: 'line' });
+  for (const p of tw.STRANDLINES) if (lines[p.id]) items.push({ label: 'line ' + p.id, target: lines[p.id], mark: 'line:' + p.id, obj: p, field: 'salt', group: 'line' });
   for (const u of tw.DRIFT_UPGRADES) if (drift[u.id]) items.push({ label: 'drift ' + u.id, target: drift[u.id], mark: 'drift:' + u.id, obj: u, field: 'cost', group: 'drift' });
   tune(items, sim, (it) => {
     // A storm is worth having as soon as the shore reaches Storm beach.
@@ -100,7 +100,7 @@ if (which === 'grove') {
   const loam = { fireweed: 130, clearing: 142, serotiny: 155, deeproot: 169, pioneer: 184, sun: 200, charcoal: 217 };
   sim = { worlds: { grove: true }, setup: (s) => { s.atlas.nodes.grove = true; }, dt: 0.5 };
   const items = [];
-  for (const p of grove.STANDS) items.push({ label: 'stand ' + p.id, target: stands[p.id], mark: 'stand:' + p.id, obj: p, field: 'trees', group: 'stand' });
+  for (const p of grove.STANDS) if (stands[p.id]) items.push({ label: 'stand ' + p.id, target: stands[p.id], mark: 'stand:' + p.id, obj: p, field: 'trees', group: 'stand' });
   for (const u of grove.SEED_UPGRADES) if (seed[u.id]) items.push({ label: 'seed ' + u.id, target: seed[u.id], mark: 'seed:' + u.id, obj: u, field: 'cost', group: 'seed' });
   for (const u of grove.LOAM_UPGRADES) if (loam[u.id]) items.push({ label: 'loam ' + u.id, target: loam[u.id], mark: 'loam:' + u.id, obj: u, field: 'cost', group: 'loam', floor: 50 });
   items.push({ label: 'seedNeedsSap', target: 9.5, mark: 'firstSeedfall', obj: grove.BAL, field: 'seedNeedsSap', group: 'seedneed' });
@@ -116,7 +116,7 @@ if (which === 'clockwork') {
   const spring = { socket5: 18, idler: 24, runin: 31, esc: 39, socket6: 48, worm: 60, socket7: 75, jewels: 95, pinion: 120, socket8: 150 };
   sim = { worlds: { clockwork: true }, setup: (s) => { s.atlas.nodes.clockwork = true; }, dt: 0.5 };
   const items = [];
-  for (const p of cw.CHIMES) items.push({ label: 'chime ' + p.id, target: chimes[p.id], mark: 'chime:' + p.id, obj: p, field: 'rate', group: 'chime' });
+  for (const p of cw.CHIMES) if (chimes[p.id]) items.push({ label: 'chime ' + p.id, target: chimes[p.id], mark: 'chime:' + p.id, obj: p, field: 'rate', group: 'chime' });
   for (const u of cw.SPRING_UPGRADES) if (spring[u.id]) items.push({ label: 'spring ' + u.id, target: spring[u.id], mark: 'spring:' + u.id, obj: u, field: 'cost', group: 'spring' });
   items.push({ label: 'springNeedsTicks', target: 14, mark: 'firstRewind', obj: cw.BAL, field: 'springNeedsTicks', group: 'springneed' });
   tune(items, sim);
@@ -133,7 +133,7 @@ if (which === 'hollow') {
   console.log(`Hollow unlocks at ${formatTime(base.t)}`);
   sim = { from: base };
   const items = [];
-  for (const p of hollow.CHAMBERS) items.push({ label: 'chamber ' + p.id, target: chambers[p.id], mark: 'chamber:' + p.id, obj: p, field: 'crystal', group: 'chamber' });
+  for (const p of hollow.CHAMBERS) if (chambers[p.id]) items.push({ label: 'chamber ' + p.id, target: chambers[p.id], mark: 'chamber:' + p.id, obj: p, field: 'crystal', group: 'chamber' });
   for (const u of hollow.GEODE_UPGRADES) if (geode[u.id]) items.push({ label: 'geode ' + u.id, target: geode[u.id], mark: 'geode:' + u.id, obj: u, field: 'cost', group: 'geode' });
   items.push({ label: 'geodeNeedsCrystal', target: 8, mark: 'firstCollapse', obj: hollow.BAL, field: 'geodeNeedsCrystal', group: 'geodeneed' });
   tune(items, sim, () => {}, base.t);

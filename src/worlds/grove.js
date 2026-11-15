@@ -10,7 +10,7 @@ import { Decimal, D } from '../core/num.js';
 import { costAt, affordableLevel } from '../core/scaling.js';
 import { emit } from '../core/events.js';
 import { gather } from '../atlas.js';
-import { struckMult } from './links.js';
+import { outsideMult, lightMult } from './links.js';
 
 // ---------------------------------------------------------------------------
 // Balance
@@ -58,6 +58,13 @@ export const BAL = {
   shineDecades: 3,
   // Newer worlds shine brighter, so each new page matters more than the last.
   shineBase: 100,
+
+  // Heartwood, from the old wood expansion. A ring is one power of ten of
+  // the sap sent there.
+  ringSapPower: 2, // sap ×(1 + rings) ^ this
+  ringLight: 1.03, // all starlight × this per ring, once the stand for it is reached
+  ringLightGreat: 1.05,
+  maxHeartShare: 0.9,
 };
 
 // A stand is reached the first time the forest holds that many trees.
@@ -73,7 +80,15 @@ export const STANDS = [
   { id: 'giant', trees: 8e29, name: 'Giants', text: "Each root level slows the forest by 15% instead of 20%." },
   { id: 'mother', trees: 1e32, name: 'Mother trees', text: "Seed set ×3." },
   { id: 'far', trees: 5e33, name: 'The wood beyond the wood', text: "Grove starts to shine." },
+  // The old wood expansion, bought with corona. These only count once it is owned.
+  { id: 'heart', trees: 1e62, name: 'Heartwood', text: "Unlocks heartwood." },
+  { id: 'glow', trees: 1e65, name: 'Foxfire', text: "Each ring multiplies all starlight by 1.03." },
+  { id: 'burl', trees: 1e68, name: 'Burls', text: "Rings multiply seed set as well as sap." },
+  { id: 'elder', trees: 1e72, name: 'Elders', text: "Each ring multiplies all starlight by 1.05 instead of 1.03." },
+  { id: 'pillar', trees: 1e76, name: 'Pillars of the sky', text: "Every ring counts twice." },
 ];
+/** How many stands there are without the expansion. */
+export const BASE_STANDS = STANDS.findIndex((p) => p.id === 'far') + 1;
 const STAND_INDEX = Object.fromEntries(STANDS.map((p, i) => [p.id, i]));
 const MEMORY_STANDS = 5;
 
@@ -128,6 +143,8 @@ export function defaults() {
     // is split between canopy and roots.
     seedShare: 0,
     canopySplit: 0.3,
+    heartShare: 0, // the share of sap sent to heartwood, taken before the rest is split
+    heartSap: D(0), // kept through seedfall and fire, lost on a fold
 
     age: 0, // seconds of growing old this generation
     genTime: 0,
@@ -148,6 +165,7 @@ export function defaults() {
 
     pending: D(0),
     given: D(0), // all the starlight this page has ever handed over
+    ringLight: 1, // what heartwood multiplies all starlight by, worked out every tick
     foldTime: 0,
     folds: 0,
     shining: false,
@@ -159,10 +177,41 @@ export function defaults() {
 // Derived numbers
 // ---------------------------------------------------------------------------
 
-function standsFrom(best) {
+/** How many stands count: the five past the wood beyond the wood need the expansion. */
+export function standCap(state) {
+  return state.eclipse.exp.grove ? STANDS.length : BASE_STANDS;
+}
+
+function standsFrom(best, cap = BASE_STANDS) {
   let n = 0;
-  while (n < STANDS.length && best.gte(STANDS[n].trees)) n++;
+  while (n < cap && best.gte(STANDS[n].trees)) n++;
   return n;
+}
+
+/** How many of the old wood's stands a forest size has reached. */
+export function oldWoodDepth(best) {
+  return standsFrom(best, STANDS.length) - standsFrom(best, BASE_STANDS);
+}
+
+/** Heartwood opens with its stand and stays open. */
+export function heartOpen(state) {
+  return !!state.eclipse.exp.grove && state.grove.bestStands > STAND_INDEX.heart;
+}
+
+/** What heartwood's rings multiply all starlight by. The other worlds read this. */
+export function ringLight(state) {
+  const g = state.grove;
+  if (!heartOpen(state)) return 1;
+  const reached = standsFrom(g.foldBestTrees, standCap(state));
+  if (reached <= STAND_INDEX.glow) return 1;
+  const rings = g.heartSap.add(1).log10().toNumber() * (reached > STAND_INDEX.pillar ? 2 : 1);
+  return Math.min(1e150, Math.pow(reached > STAND_INDEX.elder ? BAL.ringLightGreat : BAL.ringLight, rings));
+}
+
+export function setHeartShare(state, share) {
+  if (!heartOpen(state)) return false;
+  state.grove.heartShare = Math.max(0, Math.min(BAL.maxHeartShare, share));
+  return true;
 }
 
 export function milestoneReached(g, id) {
@@ -207,8 +256,10 @@ export function calc(state) {
   const L = g.loamUp;
   const N = state.atlas.nodes;
 
-  let stands = standsFrom(g.bestTrees);
+  const E = state.eclipse.up;
+  let stands = standsFrom(g.bestTrees, standCap(state));
   if (U.memory) stands = Math.max(stands, MEMORY_STANDS);
+  if (E.g_stands) stands = Math.max(stands, standsFrom(g.foldBestTrees, standCap(state)));
   const passed = (id) => stands > STAND_INDEX[id];
 
   const rCurve = rootCurve(g);
@@ -240,6 +291,12 @@ export function calc(state) {
   if (U.mast) seedReach = seedReach.mul(3);
   if (L.fireweed) seedReach = seedReach.mul(10);
 
+  // Heartwood: one ring for each power of ten of sap sent there.
+  const hasHeart = heartOpen(state);
+  const rings = hasHeart ? g.heartSap.add(1).log10().toNumber() * (passed('pillar') ? 2 : 1) : 0;
+  const heartMult = Math.pow(1 + rings, BAL.ringSapPower);
+  if (passed('burl')) seedReach = seedReach.mul(heartMult);
+
   // How rich the sap is.
   const agePower = U.veteran ? BAL.agePowerVeteran : BAL.agePower;
   const old = g.seen.age ? Math.pow(1 + g.age / BAL.ageSeconds, agePower) : 1;
@@ -248,7 +305,7 @@ export function calc(state) {
   const standStep = L.sun ? BAL.standMultSun : BAL.standMult;
   const standMult = passed('under') ? Math.pow(standStep, stands) : 1;
   const humus = U.humus ? Math.pow(BAL.humusPerCanopy, canopyLevel) : 1;
-  let richness = D(old).mul(seedBed).mul(loamBed).mul(standMult).mul(humus);
+  let richness = D(old).mul(seedBed).mul(loamBed).mul(standMult).mul(humus).mul(heartMult);
   if (U.nursery) richness = richness.mul(3);
   if (L.ashbed) richness = richness.mul(10);
   if (N.g_star) richness = richness.mul(g.given.add(1));
@@ -256,11 +313,16 @@ export function calc(state) {
   if (N.r_mist) richness = richness.mul(1 + state.tidewater.foldBestTide.add(1).log10().toNumber());
   if (N.r_works) richness = richness.mul(1 + state.clockwork.foldBestRate.add(1).log10().toNumber());
   if (N.r_crystal) richness = richness.mul(1 + state.hollow.foldBestCrystal.add(1).log10().toNumber());
-  richness = richness.mul(struckMult(state, 'grove'));
+  richness = richness.mul(outsideMult(state, 'grove'));
   const sap = g.trees.mul(richness);
 
-  const rootsShare = (1 - g.seedShare) * (1 - g.canopySplit);
-  const canopyShare = (1 - g.seedShare) * g.canopySplit;
+  // Heartwood takes its share first. The rest is split as before.
+  const heartShare = hasHeart ? g.heartShare : 0;
+  const free = 1 - heartShare;
+  const seedShare = free * g.seedShare;
+  // An Eclipse upgrade lets sap sent to seed feed the roots as well.
+  const rootsShare = free * (1 - g.seedShare) * (1 - g.canopySplit) + (E.g_seed ? seedShare : 0);
+  const canopyShare = free * (1 - g.seedShare) * g.canopySplit;
 
   const canSeedfall = passed('flower') && g.seedSet.gte(BAL.seedNeedsSap);
   const seedGain = canSeedfall ? g.seedSet.div(BAL.seedNeedsSap).pow(BAL.seedRoot).floor() : D(0);
@@ -269,16 +331,16 @@ export function calc(state) {
   const canFire = passed('dead') && g.totalSeeds.gte(BAL.loamNeedsSeeds);
   const loamGain = canFire ? g.totalSeeds.div(BAL.loamNeedsSeeds).pow(BAL.loamRoot).mul(settle).floor() : D(0);
 
-  const far = STANDS[STANDS.length - 1].trees;
+  const far = STANDS[STAND_INDEX.far].trees;
   let shine = 0;
   if (g.foldBestTrees.gte(far)) {
-    shine = BAL.shineBase * Math.pow(2, g.foldBestTrees.div(far).log10().toNumber() / BAL.shineDecades) * (N.g_bright ? 3 : 1);
+    shine = BAL.shineBase * Math.pow(2, g.foldBestTrees.div(far).log10().toNumber() / BAL.shineDecades) * (N.g_bright ? 3 : 1) * lightMult(state);
   }
 
   return {
     stands, rootLevel, canopyLevel, nextRoot, nextCanopy, room, rate, fullness,
     rootReach, canopyReach, seedReach, old, agePower, seedBed, loamBed, standMult, humus, richness, sap,
-    rootsShare, canopyShare, canSeedfall, seedGain, settle, canFire, loamGain, shine,
+    rootsShare, canopyShare, seedShare, heartShare, hasHeart, rings, heartMult, canSeedfall, seedGain, settle, canFire, loamGain, shine,
   };
 }
 
@@ -286,12 +348,12 @@ export function calc(state) {
 // Things the player can do
 // ---------------------------------------------------------------------------
 
-function startGeneration(g) {
+function startGeneration(g, keepAge = false) {
   g.trees = D(BAL.startTrees);
   g.rootSap = D(0);
   g.canopySap = D(0);
   g.seedSet = D(0);
-  g.age = 0;
+  if (!keepAge) g.age = 0;
   g.genTime = 0;
   g.bestTrees = D(0);
   if (g.seedUp.saplings) {
@@ -323,7 +385,7 @@ export function seedfall(state) {
   g.totalSeeds = g.totalSeeds.add(d.seedGain);
   g.seedfalls += 1;
   emit('seedfall', { gain: d.seedGain, time: g.genTime });
-  startGeneration(g);
+  startGeneration(g, !!state.eclipse.up.g_age);
   return true;
 }
 
@@ -382,6 +444,7 @@ export function fold(state) {
   fresh.given = g.given.add(gained);
   fresh.seedfalls = g.seedfalls;
   fresh.fires = g.fires;
+  fresh.heartShare = g.heartShare;
   fresh.seedShare = g.seedShare;
   fresh.canopySplit = g.canopySplit;
   if (state.atlas.nodes.g_hands) {
@@ -424,12 +487,13 @@ export function tick(state, dt) {
     const sap = treeSeconds.mul(d.richness);
     g.rootSap = g.rootSap.add(sap.mul(d.rootsShare * d.rootReach));
     g.canopySap = g.canopySap.add(sap.mul(d.canopyShare * d.canopyReach));
-    if (g.seedShare > 0) g.seedSet = g.seedSet.add(sap.mul(g.seedShare).mul(d.seedReach));
+    if (d.seedShare > 0) g.seedSet = g.seedSet.add(sap.mul(d.seedShare).mul(d.seedReach));
+    if (d.heartShare > 0) g.heartSap = g.heartSap.add(sap.mul(d.heartShare));
 
     if (g.trees.gt(g.bestTrees)) g.bestTrees = g.trees;
     if (g.trees.gt(g.foldBestTrees)) g.foldBestTrees = g.trees;
 
-    const stands = Math.max(standsFrom(g.bestTrees), g.seedUp.memory ? MEMORY_STANDS : 0);
+    const stands = Math.max(standsFrom(g.bestTrees, standCap(state)), g.seedUp.memory ? MEMORY_STANDS : 0);
     while (g.bestStands < stands) {
       const p = STANDS[g.bestStands];
       g.bestStands += 1;
@@ -443,7 +507,7 @@ export function tick(state, dt) {
       state.atlas.seen = true;
     }
 
-    if (g.seen.age && g.trees.div(d.room).toNumber() >= BAL.fullAt) {
+    if (g.seen.age && g.trees.div(d.room).toNumber() >= (state.eclipse.up.g_full ? 0.5 : BAL.fullAt)) {
       let speed = 1;
       if (d.stands > STAND_INDEX.lichen) speed *= 2;
       if (g.loamUp.serotiny) speed *= 3;
@@ -463,5 +527,6 @@ export function tick(state, dt) {
     g.seeds = g.seeds.add(fell);
     g.totalSeeds = g.totalSeeds.add(fell);
   }
+  g.ringLight = ringLight(state);
   if (d.shine > 0) g.pending = g.pending.add(d.shine * dt / 60);
 }

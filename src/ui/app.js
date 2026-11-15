@@ -12,6 +12,8 @@ import { buildClockwork } from './clockwork-view.js';
 import { buildHollow } from './hollow-view.js';
 import { buildStormfront } from './stormfront-view.js';
 import { buildAtlas } from './atlas-view.js';
+import { buildEclipse } from './eclipse-view.js';
+import { unlocked as eclipseUnlocked } from '../eclipse.js';
 import { buildOptions } from './options-view.js';
 
 const SAVE_KEY = 'manifold.save';
@@ -63,6 +65,7 @@ function showEvents() {
     if (e.type === 'chime') toast(e.name, e.text);
     if (e.type === 'chamber') toast(e.name, e.text);
     if (e.type === 'peal') toast(e.name, e.text);
+    if (e.type === 'eclipse') toast('Eclipse', `+${e.gain.toString()} corona.`);
   }
 }
 
@@ -102,6 +105,7 @@ const views = [
   { id: 'hollow', label: 'Hollow', view: buildHollow(game), open: (s) => !!s.atlas.nodes.hollow },
   { id: 'stormfront', label: 'Stormfront', view: buildStormfront(game), open: (s) => !!s.atlas.nodes.stormfront },
   { id: 'atlas', label: 'Atlas', view: buildAtlas(game), open: (s) => s.atlas.seen },
+  { id: 'eclipse', label: 'Eclipse', view: buildEclipse(game), open: (s) => eclipseUnlocked(s) },
   { id: 'options', label: 'Options', view: buildOptions(game), open: () => true },
 ];
 for (const v of views) {
@@ -112,7 +116,7 @@ document.getElementById('app').append(
   h('header', { class: 'top' },
     h('h1', {}, 'Manifold'),
     h('nav', { class: 'tabs' }, views.map((v) => v.btn)),
-    h('span', { class: 'version' }, 'v0.6')),
+    h('span', { class: 'version' }, 'v0.8')),
   ...views.map((v) => v.view.el));
 
 function currentView() {

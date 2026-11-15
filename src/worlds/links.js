@@ -12,3 +12,24 @@ export function struckMult(state, world) {
 export function struckPower(state) {
   return state.stormfront.fulgUp.reach ? 5 : 4;
 }
+
+/** Everything from outside a world that multiplies its main resource. */
+export function outsideMult(state, world) {
+  let m = world === 'stormfront' ? 1 : struckMult(state, world);
+  // Clockwork's moon phase complication pulls on the first two worlds.
+  if (world === 'cinder' || world === 'tidewater') m *= state.clockwork.moonMult || 1;
+  return m;
+}
+
+// Eclipse works these out whenever a corona upgrade is bought and keeps them
+// in its state, so the worlds don't need to know what the upgrades are.
+
+/** What Eclipse multiplies all starlight by. */
+export function lightMult(state) {
+  return (state.eclipse.light || 1) * (state.grove.ringLight || 1) * (state.clockwork.orreryLight || 1) * (state.hollow.abyssLight || 1) * (state.stormfront.skyLight || 1);
+}
+
+/** How many times faster Eclipse makes a world run. */
+export function paceMult(state, world) {
+  return state.eclipse.pace[world] || 1;
+}
