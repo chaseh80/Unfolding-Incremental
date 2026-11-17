@@ -29,7 +29,18 @@ Corona buys three kinds of thing, none of them ever lost:
   - **The abyss** (Hollow): five more chambers, from 1e90 to 1e114 crystal, and a fifth row of the lattice. Its three nodes multiply all starlight: by 1.3 per node owned, by (1 + minutes since last dissolve)², or by Stormfront's biggest strike.
   - **The high sky** (Stormfront): five more peals, from a strike of 1e76 to 1e106, and the sky as something to aim at. The biggest strike to hit the sky multiplies all starlight by (1 + its powers of ten)², rising to the power 4.
 
-The first Eclipse takes about 35 hours of attentive play, or about 40 if you look in every five minutes. From there, buying the cheapest thing available each time, Totality, the six 2-corona upgrades and the Star forge take about 19 more hours, and the other five expansions come between 1h 19m and 4h apart: about two days and eighteen hours in all. Someone who looks in every half hour takes three days to the first Eclipse and about nine and a half to the last expansion. Past the last expansion there is nothing left to buy.
+The first Eclipse takes about 35 hours of attentive play, or about 40 if you look in every five minutes. From there, buying the cheapest thing available each time, Totality, the six 2-corona upgrades and the Star forge take about 19 more hours, and the other five expansions come between 1h 19m and 4h apart: about two days and eighteen hours in all. Someone who looks in every half hour takes three days to the first Eclipse and about nine and a half to the last expansion. Past the last expansion corona still buys Aperture (below), and what is left to finish is the Observatory.
+
+Beside Eclipse is the **Observatory**, which opens with the first expansion. Every world feeds it, nothing in it is ever reset, and what it gives back goes to Eclipse as charges.
+
+- A **telescope** pointed at a world gathers sightings of that world in real time (speed upgrades don't touch it). The rate is 0.0003 a second for each power of ten of starlight that world has gathered this Eclipse, so a run left to go deep is watched faster than one eclipsed early. A telescope's focus climbs from ×1 to ×4 over an hour on the same world and starts again when it is moved. Where telescopes point is always chosen by hand.
+- Each world has a **constellation** of eight stars. A star costs sightings of its world (50, then 5× more each time) and needs the world itself to have got far enough by its own measure: hottest fire, best tide, biggest forest, fastest movement, most crystal held, biggest strike. The first star only needs the world shining. The sixth needs every expansion, the seventh a run left going for about an hour, the eighth one left for several.
+- **Milestones** come by stars charted in all, at 1, 2, 3, 4, 6, 8, 10, 14, 18, 24, 30 and 38. Seven of them give a **charge**; three make telescopes 2× faster; one lets a moved telescope keep half its focus; one unlocks Aperture.
+- A charge sits on one of the thirteen general corona upgrades you own and makes it a stronger version of itself: Totality 6× (from 4×), Dawn side and Dusk side 8×, Umbra 3×, Bright sky ×1,000, Diamond ring ×100,000, Thin pages 1,000× less, Keepsakes also keeps every Starlit upgrade, the Cartographer buys without spending, Old roads adds ×1,000 to every world's main resource, Steady hands gains 5× as much, Scorch marks counts strikes to a power 2 higher, the Bookbinder's folds gather 10×. Charges are placed on the Eclipse page, can be moved freely, and only take effect at the next Eclipse. There are seven charges for thirteen upgrades, and they are not equally good.
+- **Aperture** is a corona upgrade that never runs out: telescopes 1.5× faster a level, 5,000 corona and doubling.
+- Its upgrades are paid for out of what the worlds hold. Each world has five **lenses** (sightings of that world ×2 each), bought with its reset currency: ash, driftwood, seeds, springs, geodes, fulgurite. Four **instruments** each cost two worlds' currencies at once: a second and a third telescope, the Steady mount (focus 3× faster) and Long exposure (full focus ×8).
+
+With charges the expansions come sooner (the last about 2d 16h in for an attentive player), and with every expansion owned the stand-in plays hour-long runs: each one reaches the deepest stars' requirements and pays about 7,800 corona towards Aperture. Charting all 48 stars takes about 17 hours past the last expansion, about 3d 9h in all. The player who looks in every half hour buys the last expansion about 9d 0h in and has 33 stars a day later. Its runs last up to an hour and a half and stop short of what the sixth to eighth stars need (Clockwork reaches 1e163 ticks a second against 1e174 for its sixth), so it has to leave a run going for many hours to finish; how long that takes in all has not been measured. What the finished sky opens is the next big reset, which is not built.
 
 A world an Eclipse upgrade makes run faster shows its rates as they pass in real time, with the speed beside them. Clocks on its page (time since a reset, a held strike, tide length) are the world's own and run that much faster.
 
@@ -45,7 +56,7 @@ Then open http://localhost:8321.
 
 ## Code layout
 
-- `src/game.js`, `src/atlas.js`, `src/worlds/`: the whole game with no page attached. Each world's tunable numbers sit in one `BAL` block at the top of its file.
+- `src/game.js`, `src/atlas.js`, `src/eclipse.js`, `src/observatory.js`, `src/worlds/`: the whole game with no page attached. Each world's tunable numbers sit in one `BAL` block at the top of its file.
 - `src/ui/`: the page and saving. `parts.js` has the pieces every world uses.
 - `src/core/`: big numbers, cost curves, saves.
 - `vendor/break_eternity.esm.js`: [break_eternity.js](https://github.com/Patashu/break_eternity.js) 2.2.1 (MIT), for numbers past 1e308.
@@ -112,6 +123,13 @@ node sim/away.js 40 tend=hollow,stormfront
 
 looks at what the away player is waiting on early in the Eclipse phase. The first line saves the point where it has just bought Keepsakes. The second plays on for 40 hours with those worlds tended every few seconds, as if everything done by hand in them were automatic, and prints when it eclipsed. `up=passive,routes` grants corona upgrades first.
 
+```bash
+node sim/trace.js
+node sim/stargaze.js rate=0.0005
+```
+
+are for the Observatory. It changes no world, so there is no need to play the worlds again to tune it. The first line records, minute by minute, how far each world gets and how much corona is spare, from the saved late point to sixteen hours past the last expansion, and prints how many stars the stand-in had really charted by the end (`sim/out/trace.json`; several minutes, `--afk` for the other player). The second replays the Observatory against that record in a few seconds and prints when each star was charted and each lens and instrument bought; any number in the Observatory's `BAL` can be tried on the command line. The record starts a few hours after the Observatory really opens. Charges change how far the worlds get and the record has them where the recorded player put them, so the replay is a guide and the recording's own star count is the check. A recording now takes about half an hour, because charged worlds run several times faster and the simulator's cost follows world speed. `sim/stargazer.js` is how both stand-in players use the Observatory: they buy a lens or an instrument only with ten times its price in hand, and move a telescope only for a star that would come twice as quickly.
+
 `?speed=20` runs the clock twenty times faster.
 
 ### Things learned while tuning
@@ -147,6 +165,11 @@ looks at what the away player is waiting on early in the Eclipse phase. The firs
 - Early in the Eclipse phase they are not. With only Totality owned, the away player's run takes a day and a half with or without the Atlas automated, and keeping the passive-gain upgrades doesn't change it. Tending any one world every few seconds saves a few hours; tending all six brings Eclipses to every hour and a half. The wait is spread over the hand actions inside every world, most of it in the last three.
 - An automatic folder that compares a world's gathered starlight with all starlight only ever folds the brightest world. Four worlds are multiplied by the starlight they themselves have handed over, so the rest starved: a pushed hour was worth 750 corona against 3,909 by hand. Comparing each world with what it has given was worth 2,300 after fifteen minutes against 1,177 by hand, and a little less than by hand after an hour, which leaves a reason to switch it off for a long push.
 - An automatic folder also needs a floor. Folding a world the moment it has 5 starlight throws away an hour of rebuilding early on, and an Eclipse needs all six shining at once. The floor is the price of the world's own Starlit upgrade.
+- A layer that changes nothing else can be tuned from a recording. The Observatory reads the worlds and never writes to them, so one recorded run per player is enough to try any numbers in seconds.
+- When every purchase multiplies a rate, costs have to grow faster than all of them together. The Observatory's lenses, focus and star bonuses multiply to about a thousand; with stars costing 2.5× more each, slowing the base rate twentyfold moved the finish by ten minutes, because every star was waiting on its world, not on sightings. At 5× each the sightings set the pace.
+- A stand-in player must not react to a reset the way a formula does. Judged by the light of the moment, every world looked worthless right after an Eclipse, and the stand-in moved its telescopes each time and lost their focus. It now goes by the brighter of now and last Eclipse.
+- A layer whose currency runs out of uses dies, and a layer that ends on a wait is a wall. The Observatory first finished two days after the last corona purchase, with one run left going and nothing to decide. Giving its stars charges to hand back to Eclipse, and corona an upgrade that never runs out, turned that into hour-long runs with something bought after each.
+- Speed boosts multiply. Charges of ×2 and ×3 on four speed upgrades came to over a thousand times normal speed; they are ×1.5 and ×2 now.
 - Tune effects first, then calibrate costs to time targets.
 - The calibrator suits currencies that flow in smoothly. Atlas costs are set by hand from the timeline.
 
@@ -184,6 +207,8 @@ For a player acting every few seconds:
 | The abyss bought (5,000) | 1h 19m later |
 | The high sky bought (7,500) | 2h 10m later, about 2d 18h in all |
 | Two hours past the last expansion | six Eclipses, worth 1,959 to 2,829 corona each |
+| With charges, the high sky | about 2d 16h in |
+| All 48 stars charted in the Observatory | about 17h later, about 3d 9h in all |
 | **Looking in every half hour:** first Eclipse | 3d 0h |
 | Totality, all six 2-corona upgrades and the Star forge | 3d 10h later |
 | Bookbinder | 17h 30m later |
@@ -192,6 +217,8 @@ For a player acting every few seconds:
 | The long case | 13h 30m later |
 | The abyss | 9h 30m later |
 | The high sky | 7h 30m later, about 9d 11h in all |
+| The high sky, with charges | about 9d 0h in |
+| Stars charted a day later | 33 of 48; the rest need a run left going for many hours (not measured) |
 | One run pushed with every upgrade owned, forge and reef only | about 275 / 397 / 505 at 30 min / 1h / 2h |
 | The same with the old wood (Grove) | 399 / 596 / 1,036 at 30 min / 1h / 2h |
 | With the long case (Clockwork) instead | 326 / 772 / 1,023 |

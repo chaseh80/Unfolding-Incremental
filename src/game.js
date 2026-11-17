@@ -3,6 +3,7 @@
 import { mergeSave, SAVE_VERSION } from './core/save.js';
 import * as atlas from './atlas.js';
 import * as eclipse from './eclipse.js';
+import * as observatory from './observatory.js';
 import * as cinder from './worlds/cinder.js';
 import * as tidewater from './worlds/tidewater.js';
 import * as grove from './worlds/grove.js';
@@ -32,6 +33,7 @@ export function newState(now = Date.now()) {
     },
     atlas: atlas.defaults(),
     eclipse: eclipse.defaults(),
+    observatory: observatory.defaults(),
     cinder: cinder.defaults(),
     tidewater: tidewater.defaults(),
     grove: grove.defaults(),
@@ -60,6 +62,8 @@ export function tick(state, dt) {
   hollow.tick(state, dt * paceMult(state, 'hollow'));
   stormfront.tick(state, dt * paceMult(state, 'stormfront'));
   eclipse.tick(state, dt);
+  // The Observatory runs in real time whatever speed the worlds run at.
+  observatory.tick(state, dt);
   if (state.cinder.done) state.atlas.seen = true;
 }
 

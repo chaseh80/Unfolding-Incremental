@@ -13,7 +13,7 @@ import { Decimal, D } from '../core/num.js';
 import { costAt, affordableLevel } from '../core/scaling.js';
 import { emit } from '../core/events.js';
 import { gather } from '../atlas.js';
-import { outsideMult, lightMult } from './links.js';
+import { outsideMult, lightMult, passiveBoost } from './links.js';
 
 // ---------------------------------------------------------------------------
 // Balance
@@ -489,7 +489,7 @@ export function tick(state, dt) {
   }
 
   if (N.h_geode && d.geodeGain.gt(0)) {
-    const found = d.geodeGain.mul(BAL.passiveGeodePerSecond * dt);
+    const found = d.geodeGain.mul(BAL.passiveGeodePerSecond * passiveBoost(state) * dt);
     h.geodes = h.geodes.add(found);
     h.totalGeodes = h.totalGeodes.add(found);
   }

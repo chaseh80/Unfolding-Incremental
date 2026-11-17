@@ -10,7 +10,7 @@ export function struckMult(state, world) {
 }
 
 export function struckPower(state) {
-  return state.stormfront.fulgUp.reach ? 5 : 4;
+  return (state.stormfront.fulgUp.reach ? 5 : 4) + (state.eclipse.struck || 0);
 }
 
 /** Everything from outside a world that multiplies its main resource. */
@@ -18,7 +18,8 @@ export function outsideMult(state, world) {
   let m = world === 'stormfront' ? 1 : struckMult(state, world);
   // Clockwork's moon phase complication pulls on the first two worlds.
   if (world === 'cinder' || world === 'tidewater') m *= state.clockwork.moonMult || 1;
-  return m;
+  // A charged Old roads.
+  return m * (state.eclipse.boost || 1);
 }
 
 // Eclipse works these out whenever a corona upgrade is bought and keeps them
@@ -32,4 +33,9 @@ export function lightMult(state) {
 /** How many times faster Eclipse makes a world run. */
 export function paceMult(state, world) {
   return state.eclipse.pace[world] || 1;
+}
+
+/** What a charged Steady hands multiplies every passive reset gain by. */
+export function passiveBoost(state) {
+  return state.eclipse.passive || 1;
 }

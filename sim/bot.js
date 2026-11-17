@@ -13,6 +13,8 @@ import * as grove from '../src/worlds/grove.js';
 import * as cw from '../src/worlds/clockwork.js';
 import * as hollow from '../src/worlds/hollow.js';
 import * as sf from '../src/worlds/stormfront.js';
+import { actObservatory } from './stargazer.js';
+import * as obs from '../src/observatory.js';
 
 function cheapest(list, owned, ok = () => true) {
   let best = null;
@@ -398,6 +400,9 @@ const CORONA_ORDER = ['totality', 'dusk', 'dawn', 'bright', 'hands', 'cheap', 'a
 const AWAY_FIRST = ['totality', 'auto_atlas', 'hands'];
 const AWAY_ORDER = AWAY_FIRST.concat(CORONA_ORDER.filter((id) => !AWAY_FIRST.includes(id)));
 
+// Where the stand-in puts its charges: speed first, then starlight.
+const CHARGE_ORDER = ['dusk', 'dawn', 'totality', 'umbra', 'blaze', 'bright', 'routes', 'scar', 'passive', 'auto_fold', 'cheap', 'hands', 'auto_atlas'];
+
 // Spend corona on the cheapest thing available, expansions included.
 function actEclipse(state, ctx, every) {
   const e = state.eclipse;
@@ -418,10 +423,15 @@ function actEclipse(state, ctx, every) {
     });
     const x = ecl.EXPANSIONS.find((k) => !e.exp[k.world]);
     if (x) options.push({ cost: ecl.expansionCost(e), order: -1, buy: () => ecl.buyExpansion(state, x.world) });
+    if (ecl.apertureOpen(state)) options.push({ cost: ecl.apertureCost(e).toNumber(), order: 999, buy: () => ecl.buyAperture(state) });
     options.sort((a, b) => a.cost - b.cost || a.order - b.order);
     return options[0] || null;
   };
   for (let u = want(); u && u.buy(); u = want());
+  // Charges go on the first upgrades in the list that are owned.
+  const pick = CHARGE_ORDER.filter((id) => e.up[id]).slice(0, ecl.charges(state));
+  for (const id of Object.keys(e.plan)) if (!pick.includes(id)) ecl.setCharge(state, id, false);
+  for (const id of pick) ecl.setCharge(state, id, true);
   // Someone away leaves the Bookbinder off until worlds rebuild in minutes.
   // Before that, a world it folds is dark for most of the next look, and
   // an Eclipse needs all six shining at once.
@@ -438,8 +448,21 @@ function actEclipse(state, ctx, every) {
   // On each look they work out corona per hour for the run so far, and
   // eclipse once that is lower than it was on their last look.
   if (every >= 600) {
+    // With every expansion owned, a star that has its sightings but is
+    // waiting on its world is worth leaving the run going for.
+    if (ecl.EXPANSIONS.every((k) => e.exp[k.world]) && e.time < 12 * 3600) {
+      const o = state.observatory;
+      const waiting = obs.WORLD_INFO.some((w) => { const star = obs.nextStar(state, w.id); return star && o.sight[w.id] >= star.sight && o.best[w.id].lt(star.record); });
+      if (waiting) return;
+    }
     const perHour = d.gain.toNumber() / Math.max(1, e.time / 3600);
     if (ctx.lookRate && perHour < ctx.lookRate) { ecl.eclipse(state); ctx.lookRate = null; ctx.gainSeen = null; } else ctx.lookRate = perHour;
+    return;
+  }
+  // With every expansion owned, runs are left for an hour: corona now buys
+  // Aperture, and the later stars need a world to go deep.
+  if (ecl.EXPANSIONS.every((k) => e.exp[k.world])) {
+    if (e.time >= 3600) { ecl.eclipse(state); ctx.gainSeen = null; }
     return;
   }
   if (e.time - ctx.gainAt > Math.min(300, Math.max(60, 0.05 * e.time))) { ecl.eclipse(state); ctx.gainSeen = null; }
@@ -455,8 +478,10 @@ function actEclipse(state, ctx, every) {
  * from:    optional { state, t, ctx } returned by an earlier run, to carry on
  *          from where it stopped. The earlier state is copied, not changed,
  *          and `hours` then counts from that moment.
+ * sample:  optional { every, fn }; fn(state, t) is called every so many
+ *          seconds of game time, to record how a run went
  */
-export function simulate({ every = 3, hours = 24, until = null, keepLog = false, setup = null, worlds = { cinder: true, tidewater: true, grove: true, clockwork: true, hollow: true, stormfront: true }, dt = 0.25, from = null } = {}) {
+export function simulate({ every = 3, hours = 24, until = null, keepLog = false, setup = null, worlds = { cinder: true, tidewater: true, grove: true, clockwork: true, hollow: true, stormfront: true }, dt = 0.25, from = null, sample = null } = {}) {
   drain();
   const state = from ? loadState(JSON.parse(serialize(from.state)), 0) : newState(0);
   if (setup) setup(state);
@@ -477,6 +502,7 @@ export function simulate({ every = 3, hours = 24, until = null, keepLog = false,
   const mark = (name) => { if (marks[name] === undefined) marks[name] = t; };
 
   let nextAct = t;
+  let nextSample = t;
   const limit = t + hours * 3600;
   while (t < limit && !(until && marks[until] !== undefined)) {
     if (t >= nextAct) {
@@ -489,6 +515,7 @@ export function simulate({ every = 3, hours = 24, until = null, keepLog = false,
       if (worlds.hollow) actHollow(state, every, ctx);
       if (worlds.stormfront) actStormfront(state, every, ctx);
       actEclipse(state, ctx, every);
+      actObservatory(state);
       nextAct = t + every;
     }
     // A test can ask for some worlds to be tended every few seconds while
@@ -505,6 +532,7 @@ export function simulate({ every = 3, hours = 24, until = null, keepLog = false,
     }
     tick(state, dt);
     t += dt;
+    if (sample && t >= nextSample) { sample.fn(state, t); nextSample = t + sample.every; }
     if (keepLog && Math.floor(t / 1800) > Math.floor((t - dt) / 1800)) log('  ...');
     for (const e of drain()) {
       const c = state.cinder;
@@ -537,6 +565,8 @@ export function simulate({ every = 3, hours = 24, until = null, keepLog = false,
       if (e.type === 'coronaUpgrade') { log(`corona upgrade: ${e.id}`); mark('corona:' + e.id); }
       if (e.type === 'fold') { log(`FOLD ${e.world} (+${format(e.gain, 0)} starlight after ${formatTime(e.time)})`); mark(`fold:${e.world}`); }
       if (e.type === 'atlas') { log(`ATLAS: ${e.name}`); mark('atlas:' + e.id); }
+      if (e.type === 'star') { log(`STAR ${e.n} of ${e.sky}`); mark(`star:${e.world}:${e.n}`); }
+      if (e.type === 'instrument') { log(`instrument: ${e.id}`); mark('instrument:' + e.id); }
     }
   }
   return { marks, lines, state, t, ctx };

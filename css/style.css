@@ -264,3 +264,9 @@ kbd {
 
 /* Eclipse */
 .corona-accent { --accent: var(--corona); }
+
+/* Observatory */
+.sky-accent { --accent: #b9c8ff; }
+.sky-accent .stars { margin: 2px 0 6px; color: var(--accent); letter-spacing: 4px; font-size: 16px; }
+.sky-accent .muted, .corona-accent .muted { color: var(--muted); }
+.corona-accent label.check b { font-weight: 600; }

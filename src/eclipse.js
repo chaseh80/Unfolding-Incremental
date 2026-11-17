@@ -13,6 +13,7 @@
 import { D } from './core/num.js';
 import { emit, silently } from './core/events.js';
 import * as atlas from './atlas.js';
+import * as observatory from './observatory.js';
 import * as cinder from './worlds/cinder.js';
 import * as tidewater from './worlds/tidewater.js';
 import * as grove from './worlds/grove.js';
@@ -38,6 +39,10 @@ export const BAL = {
   // this many times the starlight it has handed over so far this Eclipse.
   autoFoldChoices: [1, 3, 10, 100],
   autoEvery: 1, // seconds between the automatic buyers looking
+  // Aperture, the upgrade that never runs out: what the first level costs and
+  // what each later one is multiplied by. Its effect is in the Observatory's BAL.
+  apertureCost: 5000,
+  apertureGrowth: 2,
 };
 
 export const WORLDS = [
@@ -51,6 +56,7 @@ export const WORLDS = [
 const ALL = WORLDS.map((w) => w.id);
 const HANDS = ['c_hands', 't_hands', 'g_hands', 'k_hands', 'h_hands', 's_hands', 'c_keeper', 't_keeper', 'g_keeper'];
 const PASSIVE = ['c_shed', 'c_glass', 't_storm', 'g_seed', 'k_spring', 'h_geode', 's_fulg'];
+const STARLIT = ['c_star', 't_star', 'g_star', 'k_star', 'h_star', 's_star'];
 const ROUTES = atlas.NODES.filter((n) => n.group === 'routes').map((n) => n.id);
 // Each world's Starlit upgrade, the one that multiplies it by starlight.
 const STAR_NODE = Object.fromEntries(['c_star', 't_star', 'g_star', 'k_star', 'h_star', 's_star'].map((id) => { const n = atlas.NODES.find((x) => x.id === id); return [n.group, n]; }));
@@ -108,25 +114,27 @@ export const TIERS = [1, 2, 5, 12];
 
 // pace: worlds that run faster, and by how much. keeps: Atlas upgrades that
 // survive an Eclipse. Anything else is looked up by id where it applies.
+// charged: what the upgrade does with a charge on it, a stronger version of
+// itself. more: the extra speed a charge adds to a pace upgrade.
 export const UPGRADES = [
-  { id: 'totality', cost: 1, name: 'Totality', text: 'Every world runs 4× faster.', pace: [ALL, 4] },
+  { id: 'totality', cost: 1, name: 'Totality', text: 'Every world runs 4× faster.', pace: [ALL, 4], more: 1.5, charged: '6× faster.' },
 
-  { id: 'dawn', cost: 2, name: 'Dawn side', text: 'Cinder, Tidewater and Grove run 4× faster.', pace: [['cinder', 'tidewater', 'grove'], 4] },
-  { id: 'dusk', cost: 2, name: 'Dusk side', text: 'Clockwork, Hollow and Stormfront run 4× faster.', pace: [['clockwork', 'hollow', 'stormfront'], 4] },
-  { id: 'bright', cost: 2, name: 'Bright sky', text: 'Starlight ×10.' },
-  { id: 'cheap', cost: 2, name: 'Thin pages', text: 'Atlas upgrades cost 10× less.' },
-  { id: 'hands', cost: 2, name: 'Keepsakes', text: 'Keep every Hands upgrade and every upgrade that buys for you.', keeps: HANDS },
-  { id: 'auto_atlas', cost: 2, name: 'Cartographer', text: 'Buys Atlas upgrades automatically, cheapest first.' },
+  { id: 'dawn', cost: 2, name: 'Dawn side', text: 'Cinder, Tidewater and Grove run 4× faster.', pace: [['cinder', 'tidewater', 'grove'], 4], more: 2, charged: '8× faster.' },
+  { id: 'dusk', cost: 2, name: 'Dusk side', text: 'Clockwork, Hollow and Stormfront run 4× faster.', pace: [['clockwork', 'hollow', 'stormfront'], 4], more: 2, charged: '8× faster.' },
+  { id: 'bright', cost: 2, name: 'Bright sky', text: 'Starlight ×10.', charged: 'Starlight ×1,000.' },
+  { id: 'cheap', cost: 2, name: 'Thin pages', text: 'Atlas upgrades cost 10× less.', charged: '1,000× less.' },
+  { id: 'hands', cost: 2, name: 'Keepsakes', text: 'Keep every Hands upgrade and every upgrade that buys for you.', keeps: HANDS, charged: "Also keeps every world's Starlit upgrade." },
+  { id: 'auto_atlas', cost: 2, name: 'Cartographer', text: 'Buys Atlas upgrades automatically, cheapest first.', charged: 'Buys them without spending the starlight.' },
 
-  { id: 'routes', cost: 5, name: 'Old roads', text: 'Keep every route.', keeps: ROUTES },
-  { id: 'passive', cost: 5, name: 'Steady hands', text: 'Keep the upgrades that gain a reset currency every second.', keeps: PASSIVE },
-  { id: 'scar', cost: 5, name: 'Scorch marks', text: "Keep Stormfront's strikes on older worlds." },
+  { id: 'routes', cost: 5, name: 'Old roads', text: 'Keep every route.', keeps: ROUTES, charged: "Also every world's main resource ×1,000." },
+  { id: 'passive', cost: 5, name: 'Steady hands', text: 'Keep the upgrades that gain a reset currency every second.', keeps: PASSIVE, charged: 'They also gain 5× as much.' },
+  { id: 'scar', cost: 5, name: 'Scorch marks', text: "Keep Stormfront's strikes on older worlds.", charged: 'Those strikes also count to a power 2 higher.' },
   // Dearer than the Cartographer because it only pays once worlds rebuild
   // quickly: early on, a folded world takes an hour to shine again.
-  { id: 'auto_fold', cost: 5, name: 'Bookbinder', text: 'Folds a world automatically once it has gathered as much starlight as it has given this Eclipse.' },
+  { id: 'auto_fold', cost: 5, name: 'Bookbinder', text: 'Folds a world automatically once it has gathered as much starlight as it has given this Eclipse.', charged: 'Every fold also gathers 10× the starlight.' },
 
-  { id: 'umbra', cost: 12, name: 'Umbra', text: 'Every world runs 2× faster.', pace: [ALL, 2] },
-  { id: 'blaze', cost: 12, name: 'Diamond ring', text: 'Starlight ×100.' },
+  { id: 'umbra', cost: 12, name: 'Umbra', text: 'Every world runs 2× faster.', pace: [ALL, 2], more: 1.5, charged: '3× faster.' },
+  { id: 'blaze', cost: 12, name: 'Diamond ring', text: 'Starlight ×100.', charged: 'Starlight ×100,000.' },
 ];
 const UP_BY_ID = Object.fromEntries(UPGRADES.map((u) => [u.id, u]));
 
@@ -219,6 +227,15 @@ export function defaults() {
     // once the upgrade is owned.
     auto: { atlas: true, fold: true, foldAt: 1, worlds: { cinder: true, tidewater: true, grove: true, clockwork: true, hollow: true, stormfront: true } },
     autoWait: 0,
+    // Charges come from the Observatory. `plan` is where they are set to
+    // go; `charge` is where they are, and only changes at an Eclipse.
+    charge: {},
+    plan: {},
+    boost: 1, // every world's main resource
+    passive: 1, // passive reset gains
+    struck: 0, // added to the power of strikes on older worlds
+    gather: 1, // what a fold gathers
+    aperture: 0, // levels bought
   };
 }
 
@@ -226,12 +243,62 @@ export function defaults() {
 export function refresh(state) {
   const e = state.eclipse;
   for (const id of ALL) e.pace[id] = 1;
+  const on = (id) => !!(e.up[id] && e.charge[id]);
   for (const u of UPGRADES.concat(WORLD_UPGRADES)) {
     if (!e.up[u.id] || !u.pace) continue;
-    for (const id of u.pace[0]) e.pace[id] *= u.pace[1];
+    for (const id of u.pace[0]) e.pace[id] *= u.pace[1] * (on(u.id) ? u.more : 1);
   }
-  e.light = (e.up.bright ? 10 : 1) * (e.up.blaze ? 100 : 1);
-  e.discount = e.up.cheap ? 10 : 1;
+  e.light = (e.up.bright ? (on('bright') ? 1000 : 10) : 1) * (e.up.blaze ? (on('blaze') ? 1e5 : 100) : 1);
+  e.discount = e.up.cheap ? (on('cheap') ? 1000 : 10) : 1;
+  e.boost = on('routes') ? 1000 : 1;
+  e.passive = on('passive') ? 5 : 1;
+  e.struck = on('scar') ? 2 : 0;
+  e.gather = on('auto_fold') ? 10 : 1;
+}
+
+/** How many charges the Observatory has given. */
+export function charges(state) {
+  return observatory.reached(state, 'charge');
+}
+
+export function planned(e) {
+  return Object.keys(e.plan).filter((id) => e.plan[id]).length;
+}
+
+/** Put a charge on an upgrade or take it off. It takes effect at the next Eclipse. */
+export function setCharge(state, id, on) {
+  const e = state.eclipse;
+  const up = UP_BY_ID[id];
+  if (!up || !up.charged) return false;
+  if (!on) { delete e.plan[id]; return true; }
+  if (!e.up[id] || e.plan[id] || planned(e) >= charges(state)) return false;
+  e.plan[id] = true;
+  return true;
+}
+
+/** True when the charges in place are not the ones planned. */
+export function chargesPending(e) {
+  const ids = new Set([...Object.keys(e.plan), ...Object.keys(e.charge)]);
+  for (const id of ids) if (!!e.plan[id] !== !!e.charge[id]) return true;
+  return false;
+}
+
+export function apertureOpen(state) {
+  return observatory.reached(state, 'aperture') > 0;
+}
+
+export function apertureCost(e) {
+  return D(BAL.apertureCost).mul(D(BAL.apertureGrowth).pow(e.aperture));
+}
+
+export function buyAperture(state) {
+  const e = state.eclipse;
+  const cost = apertureCost(e);
+  if (!apertureOpen(state) || e.corona.lt(cost)) return false;
+  e.corona = e.corona.sub(cost);
+  e.aperture += 1;
+  emit('coronaUpgrade', { id: 'aperture' });
+  return true;
 }
 
 export function expansionCost(e) {
@@ -296,6 +363,7 @@ export function calc(state) {
 function keptNodes(e) {
   const kept = {};
   for (const u of UPGRADES) if (e.up[u.id] && u.keeps) for (const id of u.keeps) kept[id] = true;
+  if (e.up.hands && e.charge.hands) for (const id of STARLIT) kept[id] = true;
   return kept;
 }
 
@@ -321,6 +389,10 @@ export function eclipse(state) {
   if (e.bestTime === 0 || e.time < e.bestTime) e.bestTime = e.time;
   emit('eclipse', { count: e.count, gain: d.gain, time: e.time, starlight: state.atlas.total, fire: state.cinder.foldBest, tide: state.tidewater.foldBestTide });
   e.time = 0;
+  // Charges move now, before anything is rebuilt.
+  e.charge = {};
+  for (const id of Object.keys(e.plan)) if (e.plan[id] && e.up[id]) e.charge[id] = true;
+  refresh(state);
 
   // Put back what is kept, then let every world rebuild itself the way it
   // does on a fold, so kept Hands upgrades apply.
@@ -378,7 +450,8 @@ function automate(state) {
     }
   }
   if (e.up.auto_atlas && e.auto.atlas) {
-    for (let n = cheapestNode(state); n && atlas.buy(state, n.id); n = cheapestNode(state));
+    const free = !!e.charge.auto_atlas;
+    for (let n = cheapestNode(state); n && atlas.buy(state, n.id, free); n = cheapestNode(state));
   }
 }
 

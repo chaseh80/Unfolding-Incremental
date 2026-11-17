@@ -10,7 +10,7 @@ import { Decimal, D } from '../core/num.js';
 import { costAt, affordableLevel } from '../core/scaling.js';
 import { emit } from '../core/events.js';
 import { gather } from '../atlas.js';
-import { outsideMult, lightMult } from './links.js';
+import { outsideMult, lightMult, passiveBoost } from './links.js';
 
 // ---------------------------------------------------------------------------
 // Balance
@@ -523,7 +523,7 @@ export function tick(state, dt) {
     for (const u of LOAM_UPGRADES) if (!g.loamUp[u.id] && g.loam.gte(u.cost)) buyLoamUpgrade(state, u.id);
   }
   if (seedsFallAlone(state) && d.seedGain.gt(0)) {
-    const fell = d.seedGain.mul(BAL.passiveSeedPerSecond * dt);
+    const fell = d.seedGain.mul(BAL.passiveSeedPerSecond * passiveBoost(state) * dt);
     g.seeds = g.seeds.add(fell);
     g.totalSeeds = g.totalSeeds.add(fell);
   }

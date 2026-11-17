@@ -92,11 +92,12 @@ export function available(state, node) {
   return !node.needs || has(state, node.needs);
 }
 
-export function buy(state, id) {
+/** `free` buys once the price is in hand without spending it (a charged Cartographer). */
+export function buy(state, id, free = false) {
   const node = BY_ID[id];
   const a = state.atlas;
   if (!node || a.nodes[id] || !available(state, node) || a.starlight.lt(costOf(state, node))) return false;
-  a.starlight = a.starlight.sub(costOf(state, node));
+  if (!free) a.starlight = a.starlight.sub(costOf(state, node));
   a.nodes[id] = true;
   emit('atlas', { id, name: node.name });
   return true;
@@ -104,7 +105,8 @@ export function buy(state, id) {
 
 /** Bank a world's gathered starlight. The world module does its own resetting. */
 export function gather(state, amount) {
-  const whole = D(amount).floor();
+  // A charged Bookbinder makes every fold gather more.
+  const whole = D(amount).mul(state.eclipse.gather || 1).floor();
   state.atlas.starlight = state.atlas.starlight.add(whole);
   state.atlas.total = state.atlas.total.add(whole);
   state.atlas.seen = true;

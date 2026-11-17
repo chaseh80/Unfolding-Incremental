@@ -2,6 +2,7 @@
 import { h, setText, setShown, setClass, setDisabled, confirmBox } from './dom.js';
 import { formatInt, formatTime } from '../core/num.js';
 import * as ecl from '../eclipse.js';
+import { unlocked, BAL as obsBAL } from '../observatory.js';
 
 const whole = (x) => formatInt(x);
 
@@ -72,13 +73,31 @@ export function buildEclipse(game) {
   const expGroup = h('div', { class: 'group' }, h('h2', {}, 'Expansions'), expNote,
     h('div', { class: 'grid' }, expCards.map((k) => k.el)));
 
+  // Charges from the Observatory: one row for each upgrade that can take one.
+  const chargeRows = ecl.UPGRADES.filter((u) => u.charged).map((u) => {
+    const box = h('input', { type: 'checkbox', onchange: () => { ecl.setCharge(S(), u.id, box.checked); update(); } });
+    const now = h('span', { class: 'muted' });
+    const el = h('label', { class: 'check' }, box, h('b', {}, u.name), `${u.charged}`, now);
+    return { u, el, box, now };
+  });
+  const chargeNote = h('p', { class: 'desc' });
+  const chargeBox = h('div', { class: 'box' }, h('h3', {}, 'Charges'), chargeNote, chargeRows.map((r) => r.el));
+
+  // Aperture never runs out.
+  const aperturePrice = h('span', { class: 'cost' });
+  const apertureText = h('span', { class: 'text' });
+  const apertureCard = h('button', { class: 'upgrade', onclick: () => ecl.buyAperture(S()) },
+    h('span', { class: 'name' }, 'Aperture'), apertureText, aperturePrice);
+  const apertureGroup = h('div', { class: 'group' }, h('h2', {}, 'Again and again'),
+    h('div', { class: 'grid' }, apertureCard));
+
   const upgrades = h('div', {},
     h('p', { class: 'lead' }, 'Corona upgrades are never lost. Owning one from a price opens the next price.'),
-    tiers.map((t) => t.el), expGroup, worldGroups.map((g) => g.el));
+    chargeBox, tiers.map((t) => t.el), apertureGroup, expGroup, worldGroups.map((g) => g.el));
 
   const endNotice = h('div', { class: 'notice' },
-    h('h3', {}, 'Archive'),
-    h('p', {}, 'Not built yet. Past here there are only more Eclipses for now.'));
+    h('h3', {}, 'Observatory'),
+    h('p', {}, 'Opens with your first expansion.'));
 
   const el = h('section', { class: 'panel corona-accent' },
     h('div', { class: 'figure' }, coronaAmount, h('small', {}, 'corona')),
@@ -90,7 +109,7 @@ export function buildEclipse(game) {
     const d = ecl.calc(s);
     setText(coronaAmount, whole(e.corona));
     setText(foundText, `Found ${whole(e.totalCorona)} corona.`);
-    setShown(endNotice, e.count >= 1);
+    setShown(endNotice, e.count >= 1 && !unlocked(s));
 
     const dark = ecl.WORLDS.filter((w, i) => !d.lit[i]).map((w) => w.name);
     setText(needWorlds, dark.length === 0
@@ -123,6 +142,29 @@ export function buildEclipse(game) {
         setClass(k.el, 'can', can);
         setClass(k.el, 'cant', !owned && !can);
       }
+    }
+    const have = ecl.charges(s);
+    setShown(chargeBox, have > 0);
+    if (have > 0) {
+      const placed = ecl.planned(e);
+      setText(chargeNote, `${placed} of ${have} placed. A charge makes an upgrade you own stronger. Charges can be moved freely and take effect at the next Eclipse.${ecl.chargesPending(e) ? ' Changes are waiting for an Eclipse.' : ''}`);
+      for (const r of chargeRows) {
+        const owned = !!e.up[r.u.id];
+        setShown(r.el, owned);
+        if (!owned) continue;
+        if (r.box.checked !== !!e.plan[r.u.id]) r.box.checked = !!e.plan[r.u.id];
+        setDisabled(r.box, !e.plan[r.u.id] && placed >= have);
+        setText(r.now, e.charge[r.u.id] ? 'Charged now.' : '');
+      }
+    }
+    const apertureOpen = ecl.apertureOpen(s);
+    setShown(apertureGroup, apertureOpen);
+    if (apertureOpen) {
+      const cost = ecl.apertureCost(e);
+      setText(apertureText, `Telescopes ${obsBAL.apertureMult}× faster for each level. Level ${e.aperture}.`);
+      setText(aperturePrice, `${whole(cost)} corona`);
+      setClass(apertureCard, 'can', e.corona.gte(cost));
+      setClass(apertureCard, 'cant', e.corona.lt(cost));
     }
     const expCost = ecl.expansionCost(e);
     setText(expNote, 'New content for one world. Each expansion bought makes the others cost more.');

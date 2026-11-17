@@ -1,0 +1,252 @@
+/* Stormfront: a night storm. Slate sky, cold blue light, dull gold for
+   fulgurite. Hard corners, thin rules, light used sparingly. */
+
+#app:has(section.sf:not([hidden])) { max-width: 1680px; padding: 0 28px 60px; }
+html:has(section.sf:not([hidden])), html:has(section.sf:not([hidden])) body { background: transparent; }
+html:has(section.sf:not([hidden])) { background: #05070d; }
+
+.sf {
+  --ink: #dbe6f5;
+  --dim: #7f93ad;
+  --line: #24344d;
+  --plate: rgba(13, 21, 36, 0.82);
+  --bolt: #a9d8ff;
+  --bolt-glow: rgba(120, 190, 255, 0.55);
+  --gold: #e6c56c;
+  position: relative;
+  color: var(--ink);
+  font-family: Bahnschrift, 'DIN Alternate', 'Segoe UI', sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+/* --- The sky -------------------------------------------------------------- */
+
+.sf-sky {
+  position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% -10%, #22324f 0%, transparent 60%),
+    linear-gradient(180deg, #0b1220 0%, #070b14 55%, #05070d 100%);
+}
+.sf-bank { position: absolute; fill: #16233a; opacity: 0.9; }
+.sf-bank.a { width: 70vw; left: -12vw; top: -9vw; animation: sf-drift 90s ease-in-out infinite alternate; }
+.sf-bank.b { width: 60vw; right: -14vw; top: -4vw; fill: #111c30; animation: sf-drift 120s ease-in-out infinite alternate-reverse; }
+.sf-bank.c { width: 46vw; left: 30vw; top: -11vw; fill: #1c2c48; animation: sf-drift 150s ease-in-out infinite alternate; }
+@keyframes sf-drift { from { transform: translateX(-2vw); } to { transform: translateX(3vw); } }
+
+.sf-bolt { position: absolute; fill: var(--bolt); opacity: 0; filter: drop-shadow(0 0 14px var(--bolt-glow)) drop-shadow(0 0 40px var(--bolt-glow)); }
+.sf-bolt.one { width: 9vw; left: 13vw; top: 9vw; animation: sf-strike 30s linear infinite; }
+.sf-bolt.two { width: 6vw; right: 9vw; top: 6vw; transform: scaleX(-1); animation: sf-strike 30s linear 15s infinite; }
+.sf-flash { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, rgba(150, 200, 255, 0.22), transparent 65%); opacity: 0; animation: sf-strike 30s linear infinite; }
+@keyframes sf-strike {
+  0%, 96.4% { opacity: 0; }
+  96.6% { opacity: 1; }
+  97.0% { opacity: 0.15; }
+  97.3% { opacity: 0.9; }
+  98.4%, 100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .sf-bolt, .sf-flash, .sf-bank { animation: none; } }
+
+/* --- Top strip ------------------------------------------------------------- */
+
+.sf-strip { display: flex; align-items: flex-end; gap: 44px; padding: 22px 0 16px; border-bottom: 1px solid var(--line); }
+.sf-stat b { display: block; font-size: 30px; font-weight: 600; line-height: 1; color: #fff; text-shadow: 0 0 18px var(--bolt-glow); }
+.sf-stat span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--dim); }
+.sf-stat.gold b { color: var(--gold); text-shadow: none; }
+.sf-speed { margin-left: auto; font-size: 12px; color: var(--dim); letter-spacing: 0.08em; }
+
+/* --- Layout ---------------------------------------------------------------- */
+
+.sf-layout { display: grid; grid-template-columns: minmax(340px, 1fr) minmax(340px, 1.1fr) minmax(380px, 1.3fr); gap: 22px; padding-top: 22px; align-items: start; }
+.sf-col { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+@media (max-width: 1150px) { .sf-layout { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 760px) { .sf-layout { grid-template-columns: 1fr; } }
+
+/* A panel is a plate with one cut corner and a hairline, not a rounded box. */
+.sf-panel, .sf .box, .sf .notice {
+  background: var(--plate); border: 0; border-top: 1px solid #35507a; border-radius: 0; margin: 0;
+  padding: 16px 18px 18px;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+  backdrop-filter: blur(3px);
+}
+.sf .notice { border-top-color: var(--bolt); }
+.sf .notice h3 { color: var(--bolt); }
+.sf h3 { margin: 0 0 12px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.18em; color: var(--dim); display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.sf h3 .count { color: var(--ink); letter-spacing: 0; margin-left: 8px; }
+.sf-sub { font-size: 12px; color: var(--dim); text-transform: none; letter-spacing: 0.02em; }
+.sf p.desc, .sf p.note { color: var(--dim); margin: 4px 0; font-size: 13px; }
+.sf .row { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+.sf kbd { border-radius: 0; background: transparent; border: 1px solid var(--line); color: var(--dim); }
+
+/* --- Buttons ---------------------------------------------------------------- */
+
+.sf .act {
+  border-radius: 0; background: #142036; color: var(--ink); border: 1px solid #2c4368; font: inherit; padding: 7px 14px;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  transition: background 0.12s, box-shadow 0.12s;
+}
+.sf .act:hover:not(:disabled) { background: #1c2e4d; }
+.sf .act.primary:not(:disabled) { background: #1d3558; border-color: var(--bolt); color: #fff; box-shadow: inset 0 0 18px rgba(120, 190, 255, 0.25); }
+.sf .act:disabled { opacity: 0.4; }
+.sf .act.sf-big { padding: 11px 20px; font-size: 15px; }
+.sf-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--bolt); }
+
+/* --- The cloud -------------------------------------------------------------- */
+
+.sf-cloudbox { --held: 0; text-align: center; padding-top: 6px; }
+.sf-cloudbox .row { justify-content: center; }
+.sf-cloudart { position: relative; height: 130px; }
+.sf-cloud { position: absolute; left: 50%; top: 4px; width: 250px; transform: translateX(-50%); fill: #1b2a45;
+  filter: drop-shadow(0 0 calc(var(--held) * 26px) rgba(130, 195, 255, calc(var(--held) * 0.8))); }
+.sf-spark { position: absolute; left: 50%; top: 72px; width: 38px; transform: translateX(-50%); fill: var(--bolt); opacity: calc(var(--held) * var(--held)); filter: drop-shadow(0 0 8px var(--bolt-glow)); }
+.sf-cloudbox.over .sf-cloud { fill: #2a3f66; animation: sf-tremble 0.25s linear infinite; }
+.sf-cloudbox.clear .sf-cloud { fill: #131d30; }
+@keyframes sf-tremble { 50% { transform: translateX(calc(-50% + 1.5px)); } }
+.sf-charge { font-size: 44px; font-weight: 600; line-height: 1; color: #fff; text-shadow: 0 0 22px var(--bolt-glow); }
+.sf-tension { margin-top: 10px; font-size: 15px; color: var(--bolt); }
+.sf .meter.storm { margin: 14px 0 0; max-width: none; }
+.sf .meter.storm .bar { height: 4px; border-radius: 0; background: #17243b; overflow: visible; }
+.sf .meter.storm .fill { background: linear-gradient(90deg, #35609a, var(--bolt)); box-shadow: 0 0 10px var(--bolt-glow); border-radius: 0; }
+.sf-cloudbox.over .meter.storm .fill { background: #fff; box-shadow: 0 0 16px #fff; }
+.sf .meter.storm .label { margin-top: 6px; font-size: 12px; letter-spacing: 0.06em; color: var(--dim); }
+
+/* --- Feeds: thin rows, not boxes ------------------------------------------- */
+
+.sf-feeds .box.feed { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: none; border: 0; border-top: 1px solid var(--line); clip-path: none; backdrop-filter: none; padding: 10px 0; }
+.sf-feeds .box.feed:first-of-type { border-top: 0; }
+.sf-feeds .feed h3 { margin: 0; font-size: 15px; text-transform: none; letter-spacing: 0.02em; color: var(--ink); justify-content: flex-start; }
+.sf-feeds .feed p.desc { margin: 2px 0 0; }
+.sf-feeds .feed-buy { display: flex; gap: 6px; align-items: center; }
+.sf .auto { color: var(--bolt); font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; margin: 0; }
+
+.sf table.breakdown { max-width: none; font-size: 13px; }
+.sf table.breakdown td { padding: 3px 0; color: var(--dim); }
+.sf table.breakdown td:last-child { text-align: right; color: var(--ink); }
+.sf table.breakdown tr.total td { border-top: 1px solid var(--line); color: #fff; padding-top: 6px; }
+
+/* --- Aim: where the bolt goes ----------------------------------------------- */
+
+.sf-targets { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.sf-target {
+  text-align: left; font: inherit; color: var(--ink); background: #0f1929; border: 1px solid var(--line); border-radius: 0;
+  padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; cursor: pointer; min-height: 82px;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.sf-target:hover { border-color: #46679c; }
+.sf-target .name { font-size: 15px; font-weight: 600; }
+.sf-target .text { font-size: 12px; color: var(--dim); }
+.sf-target .need { font-size: 12px; color: var(--bolt); white-space: pre-wrap; }
+.sf-target.aimed { border-color: var(--bolt); box-shadow: 0 0 0 1px var(--bolt), 0 0 22px rgba(120, 190, 255, 0.35), inset 0 0 26px rgba(120, 190, 255, 0.14); }
+.sf-target.aimed .name::after { content: '  ◆'; color: var(--bolt); }
+
+/* --- Peals: a wall of tiles -------------------------------------------------- */
+
+.sf-peals { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.sf-peal {
+  position: relative; min-height: 118px; padding: 12px 12px 14px; display: flex; flex-direction: column; gap: 4px;
+  background: #0c1422; border: 1px solid var(--line); color: var(--dim); text-align: center;
+}
+.sf-peal .at { font-size: 11px; letter-spacing: 0.1em; color: #5a6f8c; }
+.sf-peal b { font-size: 14px; font-weight: 600; color: var(--ink); }
+.sf-peal .text { font-size: 12px; line-height: 1.35; }
+.sf-peal.lit { border-color: #4f7fc0; color: var(--ink); background: radial-gradient(ellipse at 50% 120%, rgba(110, 180, 255, 0.34), rgba(18, 30, 52, 0.9) 70%); }
+.sf-peal.lit b { color: #fff; text-shadow: 0 0 12px var(--bolt-glow); }
+.sf-peal.lit .at { color: var(--bolt); }
+.sf-peal.unknown { border-style: dashed; }
+.sf-peal.unknown b { color: #4d607c; letter-spacing: 0.3em; }
+
+/* --- Fulgurite: glass tubes, gold ------------------------------------------- */
+
+.sf .gold h3 { color: var(--gold); }
+.sf .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+.sf .upgrade {
+  border-radius: 0; background: #0f1929; border: 1px solid var(--line); border-left: 3px solid #3a3320; color: var(--ink); font: inherit;
+  padding: 10px 12px; text-align: left; display: flex; flex-direction: column; gap: 3px; min-height: 96px;
+}
+.sf .upgrade .name { font-weight: 600; font-size: 14px; }
+.sf .upgrade .text, .sf .upgrade .need { font-size: 12px; color: var(--dim); }
+.sf .upgrade .need.unmet { color: #c98a7a; }
+.sf .upgrade .cost { margin-top: auto; font-size: 12px; color: var(--gold); }
+.sf .upgrade.can { border-left-color: var(--gold); box-shadow: inset 0 0 22px rgba(230, 197, 108, 0.12); cursor: pointer; }
+.sf .upgrade.can:hover { box-shadow: inset 0 0 26px rgba(230, 197, 108, 0.22), 0 0 14px rgba(230, 197, 108, 0.2); }
+.sf .upgrade.cant { opacity: 0.55; }
+.sf .upgrade.owned { border-left-color: var(--gold); background: linear-gradient(90deg, rgba(230, 197, 108, 0.14), #0f1929 60%); }
+.sf .upgrade.owned .cost { color: var(--dim); }
+.sf-pass h3 { color: var(--gold); }
+
+
+/* ===========================================================================
+   Third pass. Chase: keep the colours; no background art, no flashing cloud,
+   no boxes inside boxes, no squiggles. Text sits straight on the page the way
+   a hobby game's does. Only things you click or reach have an outline.
+   =========================================================================== */
+
+.sf-sky, .sf-defs, .sf-cloudart { display: none; }
+html:has(section.sf:not([hidden])) { background: #060a12; }
+.sf { font-family: Consolas, 'Lucida Console', 'Courier New', monospace; letter-spacing: 0; text-align: center; }
+
+.sf-strip { justify-content: center; border-bottom: 0; gap: 60px; padding: 18px 0 6px; }
+.sf-stat b { font-size: 26px; text-shadow: none; color: var(--bolt); }
+.sf-stat span { text-transform: none; letter-spacing: 0; font-size: 13px; }
+.sf-speed { position: absolute; right: 0; top: 6px; margin: 0; letter-spacing: 0; }
+
+.sf .subtabs { display: flex; justify-content: center; gap: 6px; margin: 10px 0 18px; border: 0; background: none; }
+.sf .subtabs button { background: #0f1929; border: 1px solid #35507a; border-radius: 0; color: var(--ink); font: inherit; padding: 5px 16px; cursor: pointer; }
+.sf .subtabs button.on { background: #1d3558; border-color: var(--bolt); color: #fff; }
+.sf .subtabs button.fresh { border-color: var(--gold); }
+
+/* No plates. A section is a heading and what follows it. */
+.sf-panel, .sf .box, .sf .notice { background: none; border: 0; clip-path: none; backdrop-filter: none; padding: 0; margin: 0 0 26px; }
+.sf h3 { display: block; margin: 0 0 8px; font-size: 16px; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--bolt); }
+.sf h3 .sf-sub { display: block; margin-top: 2px; }
+.sf .notice h3 { color: #fff; }
+.sf .gold h3, .sf-pass h3 { color: var(--gold); }
+.sf-layout { grid-template-columns: 1fr 1fr; gap: 20px 60px; max-width: 1300px; margin: 0 auto; padding-top: 0; }
+.sf-col { gap: 0; }
+.sf .row { justify-content: center; }
+
+.sf .act { clip-path: none; border-radius: 0; background: #142036; border: 1px solid #5d7fb5; box-shadow: none; font: inherit; }
+.sf .act.primary:not(:disabled) { background: #1d3558; border-color: var(--bolt); box-shadow: 0 0 12px rgba(120, 190, 255, 0.35); }
+.sf .act.sf-big { font-size: 15px; padding: 10px 18px; }
+.sf-tag, .sf .auto { text-transform: none; letter-spacing: 0; font-size: 13px; }
+
+.sf-cloudbox { padding-top: 0; }
+.sf-charge { font-size: 40px; font-weight: 400; text-shadow: 0 0 14px var(--bolt-glow); }
+.sf .meter.storm { max-width: 420px; margin: 12px auto 0; }
+.sf .meter.storm .bar { height: 10px; border: 1px solid #35507a; background: none; }
+.sf .meter.storm .fill { box-shadow: none; }
+.sf-tension { font-size: 14px; }
+
+.sf-feeds .box.feed { border-top: 0; padding: 6px 0; margin: 0; justify-content: center; gap: 24px; text-align: left; }
+.sf-feeds .feed-main { min-width: 230px; }
+.sf table.breakdown { max-width: 360px; margin: 0 auto; text-align: left; }
+
+/* Tiles: plain squares, lit from the middle when they count. */
+.sf-targets, .sf-peals, .sf .grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 1150px; margin: 0 auto; }
+.sf-target, .sf-peal, .sf .upgrade {
+  width: 200px; min-height: 150px; border-radius: 0; border: 1px solid #c9d6ea; background: #0a111d; color: var(--ink);
+  text-align: center; align-items: center; padding: 8px 8px 10px; font: inherit; font-size: 13px; transform: none; box-shadow: none;
+}
+.sf-target { min-height: 120px; }
+.sf-target .name, .sf-peal b, .sf .upgrade .name { font-size: 14px; font-weight: 400; color: var(--bolt); text-shadow: none; }
+.sf-target .need { color: var(--ink); }
+.sf-target.aimed { border-color: #fff; background: radial-gradient(circle, #2f6fc0 0%, #0a111d 85%); box-shadow: none; }
+.sf-target.aimed .name { color: #fff; }
+.sf-target.aimed .name::after { content: ''; }
+.sf-peal .at { color: var(--dim); letter-spacing: 0; font-size: 12px; }
+.sf-peal.lit { border-color: #c9d6ea; background: radial-gradient(circle, #2f6fc0 0%, #0a111d 85%); color: #fff; }
+.sf-peal.lit b { color: #fff; text-shadow: none; }
+.sf-peal.lit .at { color: #cfe6ff; }
+.sf-peal.unknown { border-style: solid; border-color: #35507a; }
+.sf .upgrade { border-left-width: 1px; }
+.sf .upgrade .cost { color: var(--gold); margin-top: auto; }
+.sf .upgrade.can { border-color: var(--gold); box-shadow: none; }
+.sf .upgrade.can:hover { background: #1a1a10; box-shadow: none; }
+.sf .upgrade.cant { opacity: 0.5; }
+.sf .upgrade.owned { border-color: var(--gold); background: radial-gradient(circle, #8a6d1f 0%, #0a111d 85%); }
+.sf .upgrade.owned .name { color: #fff; }
+
+/* A bar that fills more than once a second streams instead of flickering. */
+.sf .meter.storm.fast .fill { background: repeating-linear-gradient(110deg, #35609a 0 14px, var(--bolt) 14px 28px); background-size: 200% 100%; animation: sf-stream 0.9s linear infinite; }
+@keyframes sf-stream { from { background-position: 0 0; } to { background-position: -61px 0; } }
+.sf-panel > p.desc { max-width: 620px; margin: 0 auto 12px; }

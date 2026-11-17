@@ -9,7 +9,7 @@ import { Decimal, D } from '../core/num.js';
 import { costAt, affordableLevel } from '../core/scaling.js';
 import { emit } from '../core/events.js';
 import { gather } from '../atlas.js';
-import { outsideMult, lightMult } from './links.js';
+import { outsideMult, lightMult, passiveBoost } from './links.js';
 
 // ---------------------------------------------------------------------------
 // Balance
@@ -493,7 +493,7 @@ export function tick(state, dt) {
     for (const u of DRIFT_UPGRADES) if (!t.driftUp[u.id] && t.driftwood.gte(u.cost)) buyDriftUpgrade(state, u.id);
   }
   if (N.t_storm && d.driftGain.gt(0)) {
-    const washed = d.driftGain.mul(BAL.passiveDriftPerSecond * dt);
+    const washed = d.driftGain.mul(BAL.passiveDriftPerSecond * passiveBoost(state) * dt);
     t.driftwood = t.driftwood.add(washed);
     t.totalDriftwood = t.totalDriftwood.add(washed);
   }

@@ -11,7 +11,7 @@ import { Decimal, D } from '../core/num.js';
 import { costAt, affordableLevel } from '../core/scaling.js';
 import { emit } from '../core/events.js';
 import { gather } from '../atlas.js';
-import { outsideMult, lightMult } from './links.js';
+import { outsideMult, lightMult, passiveBoost } from './links.js';
 
 // ---------------------------------------------------------------------------
 // Balance
@@ -528,7 +528,7 @@ export function tick(state, dt) {
   }
 
   if (N.k_spring && d.springGain.gt(0)) {
-    const wound = d.springGain.mul(BAL.passiveSpringPerSecond * dt);
+    const wound = d.springGain.mul(BAL.passiveSpringPerSecond * passiveBoost(state) * dt);
     k.springs = k.springs.add(wound);
     k.totalSprings = k.totalSprings.add(wound);
   }

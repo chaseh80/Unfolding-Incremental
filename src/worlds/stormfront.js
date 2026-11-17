@@ -14,7 +14,7 @@ import { Decimal, D } from '../core/num.js';
 import { costAt, affordableLevel } from '../core/scaling.js';
 import { emit } from '../core/events.js';
 import { gather } from '../atlas.js';
-import { outsideMult, lightMult } from './links.js';
+import { outsideMult, lightMult, passiveBoost } from './links.js';
 import * as cinder from './cinder.js';
 import * as tidewater from './tidewater.js';
 import * as grove from './grove.js';
@@ -494,7 +494,7 @@ export function tick(state, dt) {
   s.skyLight = Math.min(1e150, skyMult(state));
 
   if (N.s_fulg && d.fulgGain.gt(0)) {
-    const found = d.fulgGain.mul(BAL.passiveFulgPerSecond * dt);
+    const found = d.fulgGain.mul(BAL.passiveFulgPerSecond * passiveBoost(state) * dt);
     s.fulgurite = s.fulgurite.add(found);
     s.totalFulgurite = s.totalFulgurite.add(found);
   }

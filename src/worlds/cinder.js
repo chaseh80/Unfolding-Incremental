@@ -8,7 +8,7 @@ import { Decimal, D } from '../core/num.js';
 import { costAt, affordableLevel } from '../core/scaling.js';
 import { emit } from '../core/events.js';
 import { gather } from '../atlas.js';
-import { outsideMult, lightMult } from './links.js';
+import { outsideMult, lightMult, passiveBoost } from './links.js';
 
 // ---------------------------------------------------------------------------
 // Balance. Every tunable number for this world lives in this block.
@@ -503,13 +503,13 @@ export function tick(state, dt) {
     for (const u of GLASS_UPGRADES) if (!c.glassUp[u.id] && c.glass.gte(u.cost)) buyGlassUpgrade(state, u.id);
   }
   if (N.c_glass && d.glassGain.gt(0)) {
-    const made = d.glassGain.mul(BAL.passiveGlassPerSecond * dt);
+    const made = d.glassGain.mul(BAL.passiveGlassPerSecond * passiveBoost(state) * dt);
     c.glass = c.glass.add(made);
     c.totalGlass = c.totalGlass.add(made);
   }
 
   if (sheds(state) && d.ashGain.gt(0)) {
-    const shed = d.ashGain.mul(BAL.passiveAshPerSecond * dt);
+    const shed = d.ashGain.mul(BAL.passiveAshPerSecond * passiveBoost(state) * dt);
     c.ash = c.ash.add(shed);
     c.totalAsh = c.totalAsh.add(shed);
   }
