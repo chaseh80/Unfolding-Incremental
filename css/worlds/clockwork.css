@@ -1,0 +1,210 @@
+/* Clockwork: a watchmaker's bench. Walnut-dark page, aged-paper text, brass
+   for what is working, copper for what you have picked and for springs.
+   Same rules as Stormfront: no panels, text straight on the page, outlines
+   only on things you click or reach, lit from the middle when they count. */
+
+#app:has(section.cw:not([hidden])) { max-width: 1680px; padding: 0 28px 60px; }
+html:has(section.cw:not([hidden])), html:has(section.cw:not([hidden])) body { background: #110c08; }
+
+.cw {
+  --ink: #e9dcc0;
+  --dim: #9c8a6c;
+  --line: #4a3a26;
+  --brass: #d9b45a;
+  --brass-lit: #8a6824;
+  --steel: #e0905e;
+  --steel-lit: #7a3a1a;
+  --tile: #170f0a;
+  position: relative;
+  color: var(--ink);
+  font-family: Cambria, 'Book Antiqua', 'Palatino Linotype', Georgia, serif;
+  font-variant-numeric: lining-nums tabular-nums;
+  text-align: center;
+}
+
+/* --- Top strip ------------------------------------------------------------- */
+
+.cw-strip { display: flex; justify-content: center; align-items: flex-end; gap: 60px; padding: 18px 0 6px; }
+.cw-stat b { display: block; font-size: 27px; font-weight: 400; line-height: 1.1; color: var(--brass); }
+.cw-stat span { font-size: 13px; color: var(--dim); }
+.cw-stat.steel b { color: var(--steel); }
+.cw-speed { position: absolute; right: 0; top: 6px; font-size: 12px; color: var(--dim); }
+
+/* --- Sub-tabs ---------------------------------------------------------------- */
+
+.cw .subtabs { display: flex; justify-content: center; gap: 6px; margin: 10px 0 20px; border: 0; background: none; }
+.cw .subtabs button { background: var(--tile); border: 1px solid var(--line); border-radius: 0; color: var(--ink); font: inherit; padding: 5px 16px; cursor: pointer; }
+.cw .subtabs button.on { background: #2a1d10; border-color: var(--brass); color: #fff; }
+.cw .subtabs button.fresh { border-color: var(--steel); }
+
+/* --- Sections: a heading and what follows it ---------------------------------- */
+
+.cw-section, .cw .box, .cw .notice { background: none; border: 0; border-radius: 0; padding: 0; margin: 0 0 28px; }
+.cw h3 { margin: 0 0 8px; font-size: 18px; font-weight: 400; color: var(--brass); }
+.cw h3 .cw-sub { display: block; margin-top: 2px; }
+.cw-sub { font-size: 13px; color: var(--dim); }
+.cw .notice h3 { color: #fff; }
+.cw .steel h3 { color: var(--steel); }
+.cw p.desc, .cw p.note { color: var(--dim); margin: 3px auto; font-size: 14px; max-width: 640px; }
+.cw .row { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 14px; }
+.cw kbd { border-radius: 0; background: transparent; border: 1px solid var(--line); color: var(--dim); }
+
+.cw-layout { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(300px, 1fr); gap: 20px 56px; max-width: 1450px; margin: 0 auto; align-items: start; }
+.cw-col { min-width: 0; }
+@media (max-width: 1100px) { .cw-layout { grid-template-columns: 1fr; } }
+
+/* --- Buttons -------------------------------------------------------------------- */
+
+.cw .act { border-radius: 0; background: #22170d; color: var(--ink); border: 1px solid #7a6034; font: inherit; padding: 6px 14px; cursor: pointer; }
+.cw .act:hover:not(:disabled) { background: #2e2010; }
+.cw .act.primary:not(:disabled) { background: #3a2a12; border-color: var(--brass); color: #fff; box-shadow: 0 0 12px rgba(217, 180, 90, 0.3); }
+.cw .act:disabled { opacity: 0.4; cursor: default; }
+.cw .act.small { padding: 3px 9px; font-size: 13px; }
+.cw .act.cw-big { font-size: 17px; padding: 12px 24px; margin: 40px auto; display: block; }
+.cw-tag { font-size: 13px; color: var(--steel); }
+
+/* --- The train: sockets in a line, driving left to right ------------------------ */
+
+.cw-train { display: flex; justify-content: center; flex-wrap: wrap; gap: 22px; margin: 16px auto 10px; }
+.cw-socket {
+  position: relative; width: 98px; height: 98px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px;
+  background: var(--tile); border: 1px solid #c8b48a; border-radius: 50%; color: var(--ink); font: inherit; cursor: pointer;
+}
+.cw-socket + .cw-socket::before { content: '›'; position: absolute; left: -18px; top: 50%; transform: translateY(-55%); font-size: 24px; color: var(--dim); }
+.cw-socket .at { font-size: 11px; color: var(--dim); }
+.cw-socket b { font-weight: 400; font-size: 14px; color: var(--brass); }
+.cw-socket .worth { font-size: 13px; color: var(--ink); min-height: 1.2em; }
+.cw-socket:not(.empty) { background: radial-gradient(circle, var(--brass-lit) 0%, var(--tile) 78%); }
+.cw-socket:not(.empty) b { color: #fff; }
+.cw-socket.empty { border-color: var(--line); border-style: dashed; }
+.cw-socket.empty b { color: var(--dim); }
+.cw-socket.stopped { background: var(--tile); border-color: #7a3b2c; }
+.cw-socket.stopped .worth { color: #d08770; }
+.cw-socket.sel { border: 2px solid var(--steel); box-shadow: 0 0 0 4px rgba(224, 144, 94, 0.18); }
+.cw-socket:hover { border-color: var(--steel); }
+.cw-train.slots .cw-socket { width: 150px; height: 150px; }
+.cw-total { font-size: 20px; color: var(--brass); margin-top: 4px; }
+
+/* --- The tray: gear tiles ------------------------------------------------------- */
+
+.cw-tray, .cw-chimes, .cw .grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 1100px; margin: 12px auto 0; }
+.cw-gear, .cw-chime, .cw .upgrade {
+  width: 200px; min-height: 150px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 10px 12px;
+  background: var(--tile); border: 1px solid #c8b48a; border-radius: 0; color: var(--ink); font: inherit; font-size: 13px; text-align: center;
+}
+.cw-gear { cursor: pointer; }
+.cw-gear b, .cw-chime b, .cw .upgrade .name { font-weight: 400; font-size: 15px; color: var(--brass); }
+.cw-gear .level { font-size: 12px; color: var(--dim); }
+.cw-gear .text, .cw-chime .text, .cw .upgrade .text, .cw .upgrade .need { font-size: 13px; color: var(--dim); line-height: 1.35; }
+.cw-gear .where { font-size: 12px; color: var(--steel); min-height: 1.2em; }
+.cw-gear .buyrow { margin-top: auto; padding-top: 6px; }
+.cw-gear:hover { border-color: var(--steel); }
+.cw-gear.placed { background: radial-gradient(circle, var(--brass-lit) 0%, var(--tile) 82%); }
+.cw-gear.placed b { color: #fff; }
+.cw-gear.placed .text { color: var(--ink); }
+.cw-gear.here { border: 2px solid var(--steel); }
+.cw-gear.empty { min-height: 0; border-style: dashed; border-color: var(--line); justify-content: center; }
+
+/* --- Chimes ---------------------------------------------------------------------- */
+
+.cw-chime .at { font-size: 12px; color: var(--dim); }
+.cw-chime b { color: var(--ink); }
+.cw-chime.lit { background: radial-gradient(circle, var(--brass-lit) 0%, var(--tile) 85%); }
+.cw-chime.lit b { color: #fff; }
+.cw-chime.lit .text, .cw-chime.lit .at { color: var(--ink); }
+.cw-chime.unknown { border-color: var(--line); }
+.cw-chime.unknown b { color: var(--dim); letter-spacing: 0.3em; }
+
+/* --- Spring upgrades: copper ------------------------------------------------ */
+
+.cw .upgrade { border-color: #8a5a3a; }
+.cw .upgrade .name { color: var(--steel); }
+.cw .upgrade .need.unmet { color: #d08770; }
+.cw .upgrade .cost { margin-top: auto; color: var(--steel); }
+.cw .upgrade.can { border-color: var(--steel); cursor: pointer; }
+.cw .upgrade.can:hover { background: #24140b; }
+.cw .upgrade.cant { opacity: 0.5; }
+.cw .upgrade.owned { background: radial-gradient(circle, var(--steel-lit) 0%, var(--tile) 85%); }
+.cw .upgrade.owned .name { color: #fff; }
+.cw .upgrade.owned .text { color: var(--ink); }
+
+/* --- Rewind and the breakdown ---------------------------------------------------- */
+
+.cw-rewind h3 { color: var(--steel); }
+.cw table.breakdown { max-width: 320px; margin: 0 auto; font-size: 14px; text-align: left; }
+.cw table.breakdown td { padding: 3px 0; color: var(--dim); }
+.cw table.breakdown td:last-child { text-align: right; color: var(--ink); }
+.cw table.breakdown tr.total td { border-top: 1px solid var(--line); color: var(--brass); padding-top: 6px; }
+
+/* --- The movement plate: the train as meshing cogs ---------------------------- */
+
+.cw-plate {
+  position: relative; display: inline-block; margin: 14px auto 6px; padding: 26px 34px;
+  background: #1d140c; border: 1px solid #5a4528;
+  background-image:
+    radial-gradient(circle at 14px 14px, #8a7448 0 3px, #3a2c18 3.5px 5px, transparent 5.5px),
+    radial-gradient(circle at calc(100% - 14px) 14px, #8a7448 0 3px, #3a2c18 3.5px 5px, transparent 5.5px),
+    radial-gradient(circle at 14px calc(100% - 14px), #8a7448 0 3px, #3a2c18 3.5px 5px, transparent 5.5px),
+    radial-gradient(circle at calc(100% - 14px) calc(100% - 14px), #8a7448 0 3px, #3a2c18 3.5px 5px, transparent 5.5px);
+}
+.cw-train.machine { flex-wrap: nowrap; gap: 0; margin: 0; }
+.cw-socket.cogged { width: 112px; height: 112px; border: 0; background: none; border-radius: 50%; }
+.cw-socket.cogged:not(.empty) { background: none; }
+.cw-socket.cogged + .cw-socket.cogged { margin-left: -9px; }
+.cw-socket.cogged + .cw-socket.cogged::before { content: none; }
+.cw-socket.cogged > :not(svg) { position: relative; z-index: 1; }
+.cw-cog { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cw-cog .body { fill: #6b5224; stroke: #c9a557; stroke-width: 1.5; }
+.cw-cog .hub { fill: #2a1d0f; stroke: #8a6c32; stroke-width: 1; }
+.cw-cog .axle { fill: #c9a557; }
+.cw-socket.cogged b { color: #fff; }
+.cw-socket.cogged .at { color: #c9b083; }
+/* Neighbours turn opposite ways, half a tooth apart so the teeth mesh. */
+.running .cw-socket.cogged:not(.empty):not(.stopped) .cw-cog { animation: cw-turn 18s linear infinite; }
+.running .cw-socket.cogged:nth-child(even):not(.empty):not(.stopped) .cw-cog { animation-direction: reverse; animation-delay: -0.75s; }
+@keyframes cw-turn { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .cw-cog { animation: none !important; } }
+.cw-socket.cogged.empty .cw-cog .body { fill: none; stroke: #4a3a26; stroke-dasharray: 3 3; }
+.cw-socket.cogged.empty .cw-cog .hub, .cw-socket.cogged.empty .cw-cog .axle { display: none; }
+.cw-socket.cogged.empty b { color: var(--dim); }
+.cw-socket.cogged.stopped { background: none; }
+.cw-socket.cogged.stopped .cw-cog .body { fill: #3a2a22; stroke: #9a5a42; }
+.cw-socket.cogged.sel { border: 0; box-shadow: none; }
+.cw-socket.cogged.sel .cw-cog .body { stroke: var(--steel); stroke-width: 3; }
+.cw-socket.cogged.sel .cw-cog { filter: drop-shadow(0 0 7px rgba(224, 144, 94, 0.6)); }
+.cw-socket.cogged:hover .cw-cog .body { stroke: var(--steel); }
+
+/* --- The parts tray: a felt-lined tray with sunken compartments ---------------- */
+
+.cw-felt {
+  display: inline-block; margin: 12px auto 0; padding: 14px;
+  background: radial-gradient(ellipse at 50% 30%, #3a1414 0%, #260b0b 70%, #1c0808 100%);
+  border: 9px solid #3a2614; border-top-color: #4a3219; border-bottom-color: #2a1b0d;
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.7);
+}
+.cw-felt .cw-tray { display: grid; grid-template-columns: repeat(4, 250px); gap: 12px; margin: 0; max-width: none; }
+@media (max-width: 1250px) { .cw-felt .cw-tray { grid-template-columns: repeat(3, 250px); } }
+.cw-felt .cw-gear {
+  width: auto; min-height: 118px; display: grid; grid-template-columns: 62px 1fr; align-items: start; gap: 10px; padding: 12px 12px 10px;
+  border: 0; text-align: left;
+  background: rgba(10, 3, 3, 0.45);
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.75), inset 0 -1px 0 rgba(255, 220, 180, 0.06);
+}
+.cw-felt .cw-gear .info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cw-felt .cw-gear .buyrow { margin-top: 6px; padding-top: 0; }
+.cw-felt .cw-gear.placed { background: rgba(10, 3, 3, 0.45); }
+.cw-felt .cw-gear.here { border: 0; box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.75), 0 0 0 2px var(--steel), 0 0 14px rgba(224, 144, 94, 0.35); }
+.cw-felt .cw-gear:hover { box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.75), 0 0 0 1px var(--steel); }
+.cw-felt .cw-gear.empty { min-height: 0; border: 0; }
+
+.cw-icon { width: 58px; height: 58px; margin-top: 2px; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.7)); }
+.cw-icon .metal { fill: #5c4a2c; stroke: #8a7650; stroke-width: 1.5; }
+.cw-icon .metal.ring { fill: none; stroke: #6e5a36; }
+.cw-icon .dark { fill: #1a0a08; }
+.cw-icon .dark.line { fill: none; stroke: #2a1a10; }
+.cw-icon .gap { fill: none; stroke: #6b3a30; stroke-width: 2; stroke-dasharray: 5 4; }
+/* A part in the train is brass and catches the light; one in the tray is dull. */
+.cw-gear.placed .cw-icon .metal { fill: #b8913c; stroke: #f0d58a; }
+.cw-gear.placed .cw-icon .metal.ring { fill: none; stroke: #d9b45a; }
+.cw-gear.placed .cw-icon { filter: drop-shadow(0 0 6px rgba(217, 180, 90, 0.45)) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.7)); }
+.cw-felt .cw-gear:not(.placed) b { color: #c9b083; }
