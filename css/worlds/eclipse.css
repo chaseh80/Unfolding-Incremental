@@ -1,0 +1,171 @@
+
+/* Eclipse: the moon over the sun. Near black, apricot corona, and each world in the colour of its tab.
+   The scene is the Layers style (flat cut-paper shapes). Everything outside
+   it is the plain minimal look: monospace text on the page, outlines only on
+   what you click or reach, tiles lit from the middle when they count. */
+
+#app:has(section.ec:not([hidden])) { max-width: 1680px; padding: 0 28px 60px; }
+html:has(section.ec:not([hidden])), html:has(section.ec:not([hidden])) body { background: transparent; }
+html:has(section.ec:not([hidden])) { background: #040305; }
+
+@font-face { font-family: 'Josefin'; src: url(../../fonts/josefin-sans-latin-400-normal.woff2) format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Josefin'; src: url(../../fonts/josefin-sans-latin-600-normal.woff2) format('woff2'); font-weight: 600; font-display: swap; }
+
+.ec {
+  --ink: #efe3d4;
+  --dim: #a08e7c;
+  --line: #3a2c20;
+  --acc: #ffb86b;
+  --acc2: #ffd9a8;
+  --btn: #14100c;
+  --btn-line: #8a6a44;
+  --btn-hover: #20180f;
+  --btn-on: #3a2412;
+  --glow: rgba(255, 184, 107, 0.3);
+  --tile: #0c0907;
+  --tile-line: #e0c8a8;
+  --lit: #8a4a1a;
+  --main: #ffb86b;
+  --main-ink: #1a0e05;
+  --main-hover: #ffcb8c;
+  --accent: var(--acc);
+  position: relative; color: var(--ink); text-align: center;
+  font-family: Consolas, 'Lucida Console', 'Courier New', monospace; font-variant-numeric: tabular-nums;
+}
+
+/* --- Top strip --------------------------------------------------------------- */
+.ec-strip { display: flex; justify-content: center; flex-wrap: wrap; gap: 20px 60px; padding: 18px 0 6px; }
+.ec-stat b { display: block; font-size: 26px; font-weight: 400; line-height: 1.15; color: var(--acc); }
+.ec-stat span { font-size: 13px; color: var(--dim); }
+.ec-speed { position: absolute; right: 0; top: 6px; font-size: 12px; color: var(--dim); }
+
+.ec .subtabs { display: flex; justify-content: center; gap: 6px; margin: 10px 0 18px; border: 0; background: none; }
+.ec .subtabs button { background: var(--btn); border: 1px solid var(--btn-line); border-radius: 0; color: var(--ink); font: inherit; padding: 5px 16px; cursor: pointer; }
+.ec .subtabs button.on { background: var(--btn-on); border-color: var(--acc); color: #fff; }
+.ec .subtabs button.fresh { border-color: var(--acc2); }
+
+/* --- Text straight on the page ----------------------------------------------- */
+.ec .box, .ec .notice { background: none; border: 0; border-radius: 0; padding: 0; margin: 0 0 26px; }
+.ec .panel > .box { margin-top: 20px; }
+.ec h3 { display: block; margin: 0 0 8px; font-size: 16px; font-weight: 400; color: var(--acc); text-transform: none; letter-spacing: 0; }
+.ec .notice h3 { color: #fff; }
+.ec h3 .count { color: var(--ink); margin-left: 8px; }
+.ec p.desc, .ec p.note, .ec p.lead { color: var(--dim); margin: 4px auto; font-size: 13px; max-width: 620px; }
+.ec .row { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 14px; }
+.ec .figure { font-size: 34px; font-weight: 400; color: var(--accent); margin-top: 6px; }
+.ec .figure small { font-size: 14px; color: var(--dim); margin-left: 8px; }
+.ec kbd { border-radius: 0; background: transparent; border: 1px solid var(--line); color: var(--dim); }
+
+.ec .act { border-radius: 0; clip-path: none; background: var(--btn); color: var(--ink); border: 1px solid var(--btn-line); box-shadow: none; font: inherit; padding: 7px 14px; }
+.ec .act:hover:not(:disabled) { background: var(--btn-hover); }
+.ec .act.primary:not(:disabled) { background: var(--btn-on); border-color: var(--acc); color: #fff; box-shadow: 0 0 12px var(--glow); }
+.ec .act:disabled { opacity: 0.4; }
+.ec .auto { color: var(--acc); font-size: 13px; margin: 0; }
+.ec select { background: var(--btn); color: var(--ink); border: 1px solid var(--btn-line); border-radius: 0; font: inherit; padding: 5px 8px; }
+
+.ec-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 60px; max-width: 1300px; margin: 0 auto; }
+.ec-col { min-width: 0; }
+@media (max-width: 900px) { .ec-layout { grid-template-columns: 1fr; } }
+
+.ec .box.feed { display: flex; align-items: center; justify-content: space-between; gap: 24px; text-align: left; margin: 0 auto; max-width: 640px; padding: 6px 0; }
+.ec .feed .feed-main { flex: 1; min-width: 0; }
+.ec .feed-buy { display: flex; gap: 6px; align-items: center; justify-content: flex-end; min-width: 150px; }
+.ec .feed h3 { margin: 0; color: var(--ink); }
+.ec .feed p.desc { margin: 2px 0 0; max-width: none; }
+
+.ec table.breakdown { max-width: 360px; margin: 0 auto; text-align: left; font-size: 13px; width: 100%; }
+.ec table.breakdown td { padding: 3px 0; color: var(--dim); }
+.ec table.breakdown td:last-child { text-align: right; color: var(--ink); }
+.ec table.breakdown tr.total td { border-top: 1px solid var(--line); color: #fff; padding-top: 6px; }
+
+.ec .dial { max-width: 420px; margin: 8px auto; }
+.ec .dial input[type=range] { accent-color: var(--acc); max-width: 100%; width: 100%; }
+.ec .meter { max-width: 420px; margin: 8px auto; }
+.ec .meter .bar { height: 10px; border: 1px solid var(--btn-line); background: none; border-radius: 0; overflow: hidden; }
+.ec .meter .fill { background: var(--acc); border-radius: 0; }
+.ec .meter .label { font-size: 12px; color: var(--dim); margin-top: 4px; }
+
+/* --- Tiles: plain squares, lit from the middle when they count ---------------- */
+.ec ul.points, .ec .grid, .ec-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 1150px; margin: 14px auto 0; padding: 0; list-style: none; }
+.ec ul.points li, .ec-tile, .ec .upgrade {
+  width: 200px; min-height: 150px; border: 1px solid var(--tile-line); border-radius: 0; background: var(--tile); color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 8px 10px; font: inherit; font-size: 13px; text-align: center; box-shadow: none;
+}
+.ec ul.points .deg, .ec-tile .at { width: auto; font-size: 12px; font-weight: 400; color: var(--dim); text-align: center; }
+.ec ul.points .what { display: flex; flex-direction: column; gap: 4px; }
+.ec ul.points .what b { font-size: 14px; font-weight: 400; color: var(--acc); font-style: normal; }
+.ec ul.points .what p { margin: 0; font-size: 12px; color: var(--ink); }
+.ec ul.points li.lit, .ec-tile.lit { background: radial-gradient(circle, var(--lit) 0%, var(--tile) 85%); color: #fff; }
+.ec ul.points li.lit .what b { color: #fff; }
+.ec ul.points li.lit .deg, .ec-tile.lit .at { color: var(--acc2); }
+.ec ul.points li.unknown { border-color: var(--line); }
+.ec ul.points li.unknown .what { font-style: normal; color: var(--dim); }
+.ec-tile .text { font-size: 12px; }
+
+.ec .upgrade .name { font-size: 14px; font-weight: 400; color: var(--accent); }
+.ec .upgrade .text, .ec .upgrade .need { font-size: 12px; color: var(--ink); }
+.ec .upgrade .need.unmet { color: #d48a6a; }
+.ec .upgrade .cost { margin-top: auto; font-size: 12px; color: var(--accent); }
+.ec .upgrade.can { border-color: var(--accent); cursor: pointer; }
+.ec .upgrade.can:hover { background: var(--btn-hover); }
+.ec .upgrade.cant { opacity: 0.5; }
+.ec .upgrade.owned { border-color: var(--accent); background: radial-gradient(circle, var(--deep, var(--lit)) 0%, var(--tile) 85%); }
+.ec .upgrade.owned .name { color: #fff; }
+
+/* --- The scene frame and its main control -------------------------------------- */
+.ec-scene { position: relative; width: min(100vw, 1600px); margin: 6px 0 14px 50%; transform: translateX(-50%); aspect-ratio: 1600 / 420; text-align: left; }
+.ec-scene > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: hidden; }
+.ec-scene .r { font: 400 13px 'Josefin', sans-serif; letter-spacing: 0.08em; fill: var(--dim); }
+.ec-scene .w { font: 600 13px 'Josefin', sans-serif; letter-spacing: 0.08em; fill: #fff; }
+.ec-scene .dark { fill: #000000; }
+.ec-scene .rim { filter: drop-shadow(-2px 0 0 #ffd9a8); }
+
+.ec-bar { position: absolute; left: 50%; bottom: 4%; transform: translateX(-50%); z-index: 2; }
+.ec-bar .row { position: relative; display: block; margin: 0; }
+.ec .ec-bar .act.primary:not(:disabled), .ec .ec-bar .act { display: block; width: 34ch; text-align: center; background: var(--main); color: var(--main-ink); border: 0; border-radius: 0; box-shadow: 4px 4px 0 #000000; font: 15px/1.2 Consolas, 'Lucida Console', 'Courier New', monospace; padding: 12px 0; white-space: nowrap; overflow: hidden; transition: transform 0.1s, box-shadow 0.1s; }
+.ec .ec-bar .act.primary:hover:not(:disabled) { background: var(--main-hover); border: 0; transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000000; }
+.ec .ec-bar .act:disabled { opacity: 0.55; box-shadow: none; background: var(--btn); color: var(--ink); }
+.ec-bar kbd { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin-left: 16px; background: var(--btn); color: var(--ink); border: 0; font: 12px Consolas, monospace; }
+@media (prefers-reduced-motion: reduce) { .ec-scene * { animation: none !important; transition: none !important; } }
+
+/* Checkboxes: a plain square, filled when on */
+.ec label.check { display: flex; gap: 10px; align-items: center; justify-content: center; margin: 8px auto; cursor: pointer; font-size: 13px; color: var(--ink); text-align: left; flex-wrap: wrap; }
+.ec label.check input[type=checkbox] { appearance: none; -webkit-appearance: none; flex: none; width: 15px; height: 15px; margin: 0; border: 1px solid var(--btn-line); background: var(--btn); border-radius: 0; cursor: pointer; display: grid; place-content: center; }
+.ec label.check input[type=checkbox]:checked { background: var(--c, var(--acc)); border-color: var(--c, var(--acc)); }
+.ec label.check input[type=checkbox]:checked::after { content: ''; width: 5px; height: 5px; background: #0a0a0c; }
+.ec label.check b { font-weight: 400; color: var(--acc); }
+
+/* --- Eclipse ----------------------------------------------------------------- */
+.ec .group { margin: 34px auto 0; }
+.ec .group h3 { margin-bottom: 0; }
+.ec .group[data-g=cinder] { --accent: #ff8a2a; --deep: #6a3210; }
+.ec .group[data-g=tidewater] { --accent: #5fa8cf; --deep: #1c4c68; }
+.ec .group[data-g=grove] { --accent: #8fcf7a; --deep: #2f5a24; }
+.ec .group[data-g=clockwork] { --accent: #d9b45a; --deep: #6e5420; }
+.ec .group[data-g=hollow] { --accent: #b28cf0; --deep: #4a2a82; }
+.ec .group[data-g=stormfront] { --accent: #a9d8ff; --deep: #2a587e; }
+.ec .group[data-g=cinder] h3 { color: #ff8a2a; }
+.ec .group[data-g=tidewater] h3 { color: #5fa8cf; }
+.ec .group[data-g=grove] h3 { color: #8fcf7a; }
+.ec .group[data-g=clockwork] h3 { color: #d9b45a; }
+.ec .group[data-g=hollow] h3 { color: #b28cf0; }
+.ec .group[data-g=stormfront] h3 { color: #a9d8ff; }
+.ec .group .desc { margin-bottom: 4px; }
+
+/* The scene: stacked cut-paper rings round a black disc */
+.ec-scene .sky { fill: #040305; }
+.ec-scene .dust { fill: #5a4a3e; }
+.ec-scene .ground { fill: #000; }
+.ec-scene .ray.a { fill: #2a140b; }
+.ec-scene .ray.b { fill: #3a1c0e; }
+.ec-scene .ring.r0 { fill: #ffcf8a; }
+.ec-scene .ring.r1 { fill: #e08a38; }
+.ec-scene .ring.r2 { fill: #9a4c1c; }
+.ec-scene .ring.r3 { fill: #5a2a12; }
+.ec-scene .ring.r4 { fill: #33170d; }
+.ec-scene .ring.r5 { fill: #1c0e09; }
+.ec-scene .ring.r6 { fill: #100806; }
+.ec-scene .disc { fill: #000; filter: drop-shadow(4px 5px 0 #1a0a04); }
+.ec-scene .lip { fill: none; stroke: #ffe0b0; stroke-width: 3; opacity: 0.6; }
+.ec-scene .glint-halo { fill: #ffcf8a; opacity: 0.35; }
+.ec-scene .glint { fill: #fff3dc; }

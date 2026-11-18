@@ -2,11 +2,14 @@
 // css/worlds/clockwork.css. Sub-tabs: the movement (the gear train and its
 // gears), complications, chimes and springs.
 //
-// The train is set by clicking: pick a socket, then pick a gear from the
-// tray under it. Each gear's tile in the tray also levels it up.
+// The movement is a cut-paper scene: cogs on an arbor bar, a balance wheel and
+// a mainspring barrel either side, a bell for each chime hung along the top.
+// The train is set by clicking: pick a cog in the scene, then pick a gear from
+// the tray under it. Each gear's tile in the tray also levels it up.
 import { h, setText, setShown, setClass, setDisabled, confirmBox } from './dom.js';
 import { format, formatInt, formatMult, formatTime } from '../core/num.js';
-import { upgradeGrid, subTabs, resetBox, breakdown, shineNotice, real } from './parts.js';
+import { upgradeGrid, subTabs, breakdown, shineNotice } from './parts.js';
+import { attr, showSvg, makeScene, mainBar } from './scene.js';
 import * as cw from '../worlds/clockwork.js';
 import { paceMult } from '../worlds/links.js';
 
@@ -14,7 +17,7 @@ const amount = (x) => format(x, 1);
 const whole = (x) => formatInt(x);
 const SVG = 'http://www.w3.org/2000/svg';
 
-// A cog drawn in code: `teeth` square-ish teeth around a rim, with a hub.
+// A cog drawn in code: `teeth` square-ish teeth around a rim.
 function cogPath(teeth, outer, inner) {
   const step = (Math.PI * 2) / teeth;
   const pts = [];
@@ -30,23 +33,16 @@ function cogPath(teeth, outer, inner) {
 }
 const COG = cogPath(12, 50, 41);
 
+/** A cog for a socket. Five round holes, so you can see it turn. */
 function cog() {
-  const el = document.createElementNS(SVG, 'svg');
-  el.setAttribute('viewBox', '-52 -52 104 104');
-  el.setAttribute('class', 'cw-cog');
-  el.setAttribute('aria-hidden', 'true');
-  const body = document.createElementNS(SVG, 'path');
-  body.setAttribute('d', COG);
-  body.setAttribute('class', 'body');
-  const hub = document.createElementNS(SVG, 'circle');
-  hub.setAttribute('r', '30');
-  hub.setAttribute('class', 'hub');
-  const axle = document.createElementNS(SVG, 'circle');
-  axle.setAttribute('r', '4');
-  axle.setAttribute('cy', '-21');
-  axle.setAttribute('class', 'axle');
-  el.append(body, hub, axle);
-  return el;
+  const wrap = document.createElement('span');
+  wrap.className = 'cw-cogwrap';
+  const holes = [0, 1, 2, 3, 4].map((i) => {
+    const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
+    return `<circle class="hole" cx="${(Math.cos(a) * 19).toFixed(1)}" cy="${(Math.sin(a) * 19).toFixed(1)}" r="6"/>`;
+  }).join('');
+  wrap.innerHTML = `<svg viewBox="-52 -52 104 104" class="cw-cog" aria-hidden="true"><path class="body" d="${COG}"/><circle class="hub" r="30"/>${holes}<circle class="axle" r="7"/></svg>`;
+  return wrap;
 }
 
 // A small drawing of each kind of part, for the tray.
@@ -71,12 +67,12 @@ function partIcon(id) {
   const dark = (tag, attrs) => el.append(svgEl(tag, { class: 'dark', ...attrs }));
   if (id === 'brass') { metal('path', { d: cogPath(12, 46, 37) }); dark('circle', { r: 14 }); }
   else if (id === 'fly') {
-    metal('circle', { r: 40, fill: 'none', 'stroke-width': 10, class: 'metal ring' });
+    metal('circle', { r: 40, 'stroke-width': 10, class: 'metal ring' });
     for (let i = 0; i < 4; i++) metal('rect', { x: -4, y: -38, width: 8, height: 76, transform: `rotate(${i * 45})` });
     dark('circle', { r: 9 });
   } else if (id === 'gov') {
     metal('rect', { x: -4, y: -46, width: 8, height: 70 });
-    metal('path', { d: 'M0 -26 L-30 14 M0 -26 L30 14', fill: 'none', 'stroke-width': 6, class: 'metal ring' });
+    metal('path', { d: 'M0 -26 L-30 14 M0 -26 L30 14', 'stroke-width': 6, class: 'metal ring' });
     metal('circle', { cx: -30, cy: 18, r: 12 }); metal('circle', { cx: 30, cy: 18, r: 12 });
     metal('rect', { x: -20, y: 30, width: 40, height: 8 });
   } else if (id === 'ratchet') { metal('path', { d: ratchetPath(14, 46, 33) }); dark('circle', { r: 12 }); }
@@ -90,12 +86,61 @@ function partIcon(id) {
   else if (id === 'dial') {
     metal('circle', { r: 44 }); dark('circle', { r: 37 });
     for (let i = 0; i < 12; i++) metal('rect', { x: -1.5, y: -35, width: 3, height: 7, transform: `rotate(${i * 30})` });
-    metal('path', { d: 'M0 0 L0 -26 M0 0 L16 8', fill: 'none', 'stroke-width': 4, class: 'metal ring' });
+    metal('path', { d: 'M0 0 L0 -26 M0 0 L16 8', 'stroke-width': 4, class: 'metal ring' });
   } else { el.append(svgEl('circle', { r: 40, class: 'gap' })); }
   return el;
 }
 
 const SHORT = { brass: 'Brass', fly: 'Flywheel', gov: 'Governor', ratchet: 'Ratchet', idler: 'Idler', esc: 'Escapement', worm: 'Worm', pinion: 'Pinion' };
+
+// --- The scene ---------------------------------------------------------------
+// 1600 x 420. Back to front: the plate, big slow cogs, the arbor bar the train
+// sits on, a balance wheel and a mainspring barrel, the bell rail and the bench.
+
+function spiral(turns, r0, r1) {
+  const pts = [];
+  const n = turns * 24;
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const a = t * turns * Math.PI * 2;
+    const r = r0 + (r1 - r0) * t;
+    pts.push(`${(Math.cos(a) * r).toFixed(1)} ${(Math.sin(a) * r).toFixed(1)}`);
+  }
+  return `M${pts.join('L')}`;
+}
+
+const MAX_BELLS = cw.CHIMES.length;
+
+function movementSvg() {
+  const big = (x, y, teeth, outer, inner, t, rev, cls) =>
+    `<g transform="translate(${x} ${y})"><g class="spin ${rev ? 'rev' : ''}" style="--t:${t}s"><path class="${cls}" d="${cogPath(teeth, outer, inner)}"/><circle class="${cls} deep" r="${inner * 0.62}"/><circle class="plate" r="${inner * 0.22}"/></g></g>`;
+  const bells = Array.from({ length: MAX_BELLS }, (_, i) =>
+    `<g class="bell" id="cw-bell${i}"><rect class="hang" x="-1.5" y="0" width="3" height="16"/><path class="shell" d="M-16 50 L-12 30 Q-12 16 0 16 Q12 16 12 30 L16 50 Z"/><circle class="clap" cy="54" r="4"/></g>`).join('');
+  const screws = [40, 330, 1270, 1560].map((x) =>
+    `<g transform="translate(${x} 184)"><circle class="screw" r="9"/><rect class="slot" x="-7" y="-1.5" width="14" height="3" transform="rotate(35)"/></g>`).join('');
+  return `<svg viewBox="0 0 1600 420" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <rect class="plate" width="1600" height="420"/>
+  <g class="bg">
+    ${big(60, 340, 20, 168, 150, 140, false, 'bgcog')}
+    ${big(1560, 330, 22, 186, 167, 160, true, 'bgcog')}
+    ${big(380, 30, 14, 104, 92, 90, true, 'bgcog far')}
+    ${big(1250, 20, 14, 98, 86, 100, false, 'bgcog far')}
+    ${big(780, 410, 16, 96, 84, 110, false, 'bgcog far')}
+  </g>
+  <rect class="arbor" y="160" width="1600" height="48"/>
+  <rect class="arbor-edge" y="160" width="1600" height="4"/>
+  ${screws}
+  <g transform="translate(180 184)"><path class="spring-line" d="${spiral(4, 10, 54)}"/>
+    <g class="front"><g class="rock"><circle class="wheel-ring" r="70"/><rect class="wheel-bar" x="-70" y="-5" width="140" height="10"/><rect class="wheel-bar" x="-5" y="-70" width="10" height="140"/><circle class="wheel-hub" r="13"/><circle class="plate" r="4"/></g></g></g>
+  <g transform="translate(1420 184)"><g class="front"><g class="spin" style="--t:120s"><circle class="barrel" r="72"/><path class="spring-coil" d="${spiral(3.5, 14, 56)}"/><rect class="wheel-bar" x="-11" y="-11" width="22" height="22"/></g></g></g>
+  <rect class="rail" width="1600" height="56"/>
+  <rect class="edge" y="56" width="1600" height="4"/>
+  <text class="r" x="40" y="35">CHIMES</text>
+  ${bells}
+  <rect class="rail" y="364" width="1600" height="56"/>
+  <rect class="edge" y="360" width="1600" height="4"/>
+</svg>`;
+}
 
 export function buildClockwork(game) {
   const S = () => game.state;
@@ -134,22 +179,44 @@ export function buildClockwork(game) {
     h('div', { class: 'cw-stat' }, rateText, h('span', {}, 'ticks per second')),
     springStat, speedText);
 
-  // --- Movement: the train ---------------------------------------------------
+  // --- Movement: the scene ---------------------------------------------------
 
-  const startBtn = h('button', { class: 'act primary cw-big', onclick: () => cw.wind(S()) }, 'Wind the movement');
+  const sc = makeScene('cw-scene', movementSvg());
+  const scene = sc.el;
+  const bells = Array.from({ length: MAX_BELLS }, (_, i) => sc.q('#cw-bell' + i));
 
   const sockets = [];
   for (let i = 0; i < cw.BAL.maxSockets; i++) {
     const name = h('b');
     const worth = h('span', { class: 'worth' });
-    const el = h('button', { class: 'cw-socket cogged', onclick: () => { socket = i; update(); } },
+    const el = h('button', { class: 'cw-socket', onclick: () => { socket = i; update(); } },
       cog(), h('span', { class: 'at' }, String(i + 1)), name, worth);
     sockets.push({ el, name, worth });
   }
-  const trainTotal = h('div', { class: 'cw-total' });
-  const trainBox = h('div', { class: 'cw-section' }, h('h3', {}, 'Gear train'),
-    h('p', { class: 'desc' }, 'Gears drive left to right. Pick a socket, then a gear for it.'),
-    h('div', { class: 'cw-plate' }, h('div', { class: 'cw-train machine' }, sockets.map((s) => s.el))), trainTotal);
+  const train = h('div', { class: 'cw-train' }, sockets.map((s) => s.el));
+  scene.append(train);
+
+  // The world's main control: wind it, then rewind it.
+  const main = mainBar('cw', () => { if (!K().wound) cw.wind(S()); else tryRewind(); }, 'B');
+  scene.append(main.el);
+
+  function updateMain(k, d) {
+    if (!k.wound) { main.set({ label: 'Wind the movement', hotkey: false }); return; }
+    const ready = d.canRewind && d.springGain.gte(1);
+    main.set({ shown: !!k.seen.rewind, label: ready ? `Rewind for ${whole(d.springGain)} springs` : 'Rewind', enabled: ready, hotkey: true });
+  }
+
+  function updateScene(k, d) {
+    setClass(scene, 'running', k.wound);
+    const cap = cw.chimeCap(S());
+    const n = Math.min(cap, MAX_BELLS);
+    bells.forEach((b, i) => {
+      showSvg(b, i < n);
+      if (i >= n) return;
+      attr(b, 'transform', `translate(${(800 + (i - (n - 1) / 2) * 100).toFixed(0)} 56)`);
+      setClass(b, 'lit', k.wound && i < d.chimes);
+    });
+  }
 
   // The tray: one tile per gear, to fit it and to level it.
   const tray = cw.GEARS.map((g) => {
@@ -165,15 +232,16 @@ export function buildClockwork(game) {
   const emptyTile = h('div', { class: 'cw-gear empty', onclick: () => cw.setSocket(S(), socket, '') }, partIcon('empty'),
     h('div', { class: 'info' }, h('b', {}, 'Take out'), h('span', { class: 'text' }, 'Leaves the socket empty.')));
   const buyAll = h('button', { class: 'act', onclick: () => cw.levelAll(S()) }, 'Level all');
-  const trayBox = h('div', { class: 'cw-section' }, h('h3', {}, 'Gears'),
-    h('div', { class: 'cw-felt' }, h('div', { class: 'cw-tray' }, tray.map((t) => t.el), emptyTile)),
+  const trayBox = h('div', { class: 'box' }, h('h3', {}, 'Gears'),
+    h('p', { class: 'desc' }, 'Pick a cog above, then a gear for it.'),
+    h('div', { class: 'cw-tray' }, tray.map((t) => t.el), emptyTile),
     h('div', { class: 'row' }, buyAll, h('kbd', {}, 'M')));
 
   function updateTrain(k, d) {
     if (socket >= d.sockets) socket = 0;
     sockets.forEach((s, i) => {
-      setShown(s.el, i < d.sockets);
-      if (i >= d.sockets) return;
+      setShown(s.el, k.wound && i < d.sockets);
+      if (!k.wound || i >= d.sockets) return;
       const id = d.train[i];
       setText(s.name, id ? SHORT[id] : 'Empty');
       let text = '';
@@ -187,8 +255,6 @@ export function buildClockwork(game) {
       setClass(s.el, 'stopped', !!d.run.stopped[i]);
       setClass(s.el, 'empty', !id);
     });
-    setText(trainTotal, `Train ${formatMult(d.run.product)}`);
-    setClass(trainBox, 'running', k.wound);
 
     const auto = !!k.springUp.apprentice;
     let anyManual = false;
@@ -218,24 +284,29 @@ export function buildClockwork(game) {
     setShown(buyAll.parentNode, anyManual);
   }
 
-  const rewindBox = resetBox({ title: 'Rewind', accent: 'cw-section cw-rewind', onClick: tryRewind, hotkey: 'B' });
+  // What a rewind will do, as plain lines under the scene.
+  const rewindLines = [h('p', { class: 'desc' }), h('p', { class: 'desc' })];
+  const rewindBox = h('div', { class: 'box' }, h('h3', {}, 'Rewind'), rewindLines);
   function updateRewind(k, d) {
+    setShown(rewindBox, !!k.seen.rewind);
+    if (!k.seen.rewind) return;
     const ready = d.canRewind && d.springGain.gte(1);
     const four = cw.CHIMES.find((p) => p.id === 'four');
-    let text;
-    if (d.chimes <= cw.CHIMES.indexOf(four)) text = [`Needs ${four.name}.`];
-    else if (ready) text = [`Ticks this winding: ${amount(k.windTicks)}.`];
-    else text = [`Ticks this winding: ${amount(k.windTicks)} of ${whole(cw.BAL.springNeedsTicks)}.`];
-    if (k.seen.rewind) text[2] = `Ticks ×${format(d.wear, 2)} from ${formatTime(k.windTime)} of wear-in.`;
-    rewindBox.set({ shown: !!k.seen.rewind, text, label: ready ? `Rewind for ${whole(d.springGain)} springs` : 'Rewind', ready });
+    let first;
+    if (d.chimes <= cw.CHIMES.indexOf(four)) first = `Needs ${four.name}.`;
+    else if (ready) first = `Ticks this winding: ${amount(k.windTicks)}.`;
+    else first = `Ticks this winding: ${amount(k.windTicks)} of ${whole(cw.BAL.springNeedsTicks)}.`;
+    setText(rewindLines[0], first);
+    setText(rewindLines[1], `Ticks ×${format(d.wear, 2)} from ${formatTime(k.windTime)} of wear-in.`);
   }
 
   const sources = breakdown('Ticks per second', ['Train', 'Wear-in', 'Springs', 'Chimes', 'Other'], 'Total');
   const shine = shineNotice('Clockwork');
 
-  const movementPanel = h('div', { class: 'cw-layout' },
-    h('div', { class: 'cw-col wide' }, shine.el, startBtn, trainBox, trayBox),
-    h('div', { class: 'cw-col' }, rewindBox.el, sources.el));
+  const movementPanel = h('div', { class: 'panel' }, scene, shine.el,
+    h('div', { class: 'cw-layout' },
+      h('div', { class: 'cw-col' }, trayBox),
+      h('div', { class: 'cw-col' }, rewindBox, sources.el)));
 
   // --- Complications ---------------------------------------------------------
 
@@ -243,7 +314,7 @@ export function buildClockwork(game) {
   for (let i = 0; i < cw.COMPLICATION_SLOTS; i++) {
     const name = h('b');
     const worth = h('span', { class: 'worth' });
-    const el = h('button', { class: 'cw-socket slot', onclick: () => { slot = i; update(); } },
+    const el = h('button', { class: 'cw-slot', onclick: () => { slot = i; update(); } },
       h('span', { class: 'at' }, `Slot ${i + 1}`), name, worth);
     slots.push({ el, name, worth });
   }
@@ -253,10 +324,11 @@ export function buildClockwork(game) {
       h('div', { class: 'info' }, h('b', {}, c.name), h('span', { class: 'text' }, c.text), where));
     return { c, el, where };
   });
-  const partsPanel = h('div', { class: 'cw-section' }, h('h3', {}, 'Complications'),
-    h('p', { class: 'desc' }, 'Pick a slot, then a part for it. A part grows stronger the longer it stays fitted, rewinds included. Moving it starts it over.'),
-    h('div', { class: 'cw-train slots' }, slots.map((s) => s.el)),
-    h('div', { class: 'cw-felt' }, h('div', { class: 'cw-tray' }, parts.map((p) => p.el))));
+  const partsPanel = h('div', { class: 'panel' },
+    h('div', { class: 'box' }, h('h3', {}, 'Complications'),
+      h('p', { class: 'desc' }, 'Pick a slot, then a part for it. A part grows stronger the longer it stays fitted, rewinds included. Moving it starts it over.'),
+      h('div', { class: 'cw-slots' }, slots.map((s) => s.el)),
+      h('div', { class: 'cw-tray' }, parts.map((p) => p.el))));
 
   function updateParts(k) {
     const open = cw.complicationSlots(S());
@@ -283,11 +355,12 @@ export function buildClockwork(game) {
   const chimeTiles = cw.CHIMES.map((p) => {
     const name = h('b');
     const text = h('span', { class: 'text' });
-    const el = h('div', { class: 'cw-chime' }, h('span', { class: 'at' }, `${whole(p.rate)} / s`), name, text);
+    const el = h('div', { class: 'cw-tile' }, h('span', { class: 'at' }, `${whole(p.rate)} / s`), name, text);
     return { p, el, name, text };
   });
-  const chimesPanel = h('div', { class: 'cw-section' }, h('h3', {}, 'Chimes'),
-    h('div', { class: 'cw-chimes' }, chimeTiles.map((t) => t.el)));
+  const chimesPanel = h('div', { class: 'panel' },
+    h('div', { class: 'box' }, h('h3', {}, 'Chimes'),
+      h('div', { class: 'cw-tiles' }, chimeTiles.map((t) => t.el))));
 
   function updateChimes(k, d) {
     const cap = cw.chimeCap(S());
@@ -313,7 +386,8 @@ export function buildClockwork(game) {
     note: (u) => cw.needText(u),
     blocked: (u) => !cw.needMet(S(), u),
   });
-  const springPanel = h('div', { class: 'cw-section steel' }, h('h3', {}, 'Springs', springText), springGrid.el);
+  const springPanel = h('div', { class: 'panel cw-copper' },
+    h('div', { class: 'box' }, h('h3', {}, 'Springs'), springText), springGrid.el);
 
   function updateSprings(k, d) {
     const self = S().atlas.nodes.k_spring ? `, +${format(d.springGain.mul(cw.BAL.passiveSpringPerSecond * pace()), 1)} per second` : '';
@@ -351,10 +425,10 @@ export function buildClockwork(game) {
     const active = tabs.update((tab) => tab.open(k));
     if (active.id === 'train') {
       shine.set(d.shine, k.pending, p);
-      setShown(startBtn, !k.wound);
-      setShown(trainBox, k.wound);
+      updateScene(k, d);
+      updateMain(k, d);
+      updateTrain(k, d);
       setShown(trayBox, k.wound);
-      if (k.wound) updateTrain(k, d);
       updateRewind(k, d);
       sources.set(k.wound, [
         formatMult(d.run.product),

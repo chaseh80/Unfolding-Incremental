@@ -67,7 +67,7 @@ Short, plain, effect first. Names may carry flavour; descriptions never do. No c
 - Saves: `mergeSave(defaults, loaded)` walks the defaults, so adding a field to `defaults()` is safe for old saves. An empty object in defaults is an open-ended set. Arrays are copied whole.
 - Pages are built once in `src/ui/*-view.js` with `h()` and updated with `setText`, `setShown`, `setClass`, `setDisabled`. Each view returns `{ el, update, key }` and is listed in `src/ui/app.js`.
 - Events: logic calls `emit(type, data)`; the page and the simulator `drain()` them.
-- Bump the version label in `src/ui/app.js` with each slice (now v0.9).
+- Bump the version label in `src/ui/app.js` with each slice (now v0.13).
 
 ## Testing in the browser
 

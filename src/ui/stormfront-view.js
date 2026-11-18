@@ -13,22 +13,6 @@ const POWER = { 2: '²', 3: '³', 4: '⁴', 5: '⁵' };
 const AT = { ground: 'the ground', mast: 'the mast', sky: 'the sky' };
 const SVG = 'http://www.w3.org/2000/svg';
 
-function svg(viewBox, cls, ...paths) {
-  const el = document.createElementNS(SVG, 'svg');
-  el.setAttribute('viewBox', viewBox);
-  el.setAttribute('class', cls);
-  el.setAttribute('aria-hidden', 'true');
-  for (const d of paths) {
-    const p = document.createElementNS(SVG, 'path');
-    p.setAttribute('d', d);
-    el.append(p);
-  }
-  return el;
-}
-
-const BOLT = 'M58 0 L22 46 L44 46 L14 100 L70 38 L46 38 Z';
-const CLOUD = 'M40 70 Q8 70 10 46 Q12 26 34 28 Q40 6 66 10 Q88 0 104 20 Q134 14 138 40 Q160 44 152 62 Q148 72 130 70 Z';
-
 export function buildStormfront(game) {
   const S = () => game.state;
   const pace = () => paceMult(game.state, 'stormfront');
@@ -49,16 +33,6 @@ export function buildStormfront(game) {
     }
     sf.pass(S());
   }
-
-  // --- The sky behind everything ------------------------------------------
-
-  const sky = h('div', { class: 'sf-sky' },
-    svg('0 0 160 80', 'sf-bank a', CLOUD), svg('0 0 160 80', 'sf-bank b', CLOUD), svg('0 0 160 80', 'sf-bank c', CLOUD),
-    svg('0 0 80 100', 'sf-bolt one', BOLT), svg('0 0 80 100', 'sf-bolt two', BOLT),
-    h('div', { class: 'sf-flash' }));
-  // A filter that makes straight edges wobble, so outlines look drawn by hand.
-  const ink = h('div', { class: 'sf-defs' });
-  ink.innerHTML = '<svg width="0" height="0"><filter id="sf-rough" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="5"/></filter><filter id="sf-rough2" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="23" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="4"/></filter></svg>';
 
   // --- Top strip -----------------------------------------------------------
 
@@ -82,10 +56,13 @@ export function buildStormfront(game) {
   const tensionText = h('div', { class: 'sf-tension' });
   const strikeBtn = h('button', { class: 'act primary sf-big', onclick: () => sf.strike(S()) });
   const rodNote = h('span', { class: 'sf-tag' }, 'Automatic');
-  const cloudArt = h('div', { class: 'sf-cloudart' }, svg('0 0 160 80', 'sf-cloud', CLOUD), svg('0 0 80 100', 'sf-spark', BOLT));
-  const cloudLive = h('div', {}, chargeAmount, h('div', { class: 'sf-sub' }, 'charge'), holdMeter, tensionText,
-    h('div', { class: 'row' }, strikeBtn, h('kbd', {}, 'S'), rodNote));
-  const cloudBox = h('div', { class: 'sf-panel sf-cloudbox' }, cloudArt, startBtn, cloudLive);
+  // The strike button lives in the sky of the Aim scene once that exists, so it
+  // sits next to the choice of target. Before then it is under the charge.
+  const strikeGroup = h('div', { class: 'row' }, strikeBtn, h('kbd', {}, 'S'), rodNote);
+  const strikeSlot = h('div', {}, strikeGroup);
+  const strikeBar = h('div', { class: 'sf-strikebar' });
+  const cloudLive = h('div', {}, chargeAmount, h('div', { class: 'sf-sub' }, 'charge'), holdMeter, tensionText, strikeSlot);
+  const cloudBox = h('div', { class: 'sf-panel sf-cloudbox' }, startBtn, cloudLive);
 
   function updateCloud(c, d) {
     setText(chargeAmount, amount(c.charge));
@@ -97,8 +74,6 @@ export function buildStormfront(game) {
     setClass(holdMeter, 'fast', fast);
     const held = fast ? 1 : Math.min(1, c.held / d.holdMax);
     setWidth(holdFill, held);
-    const glow = held.toFixed(2);
-    if (cloudBox.__glow !== glow) { cloudBox.style.setProperty('--held', glow); cloudBox.__glow = glow; }
     setClass(cloudBox, 'over', d.overcharge > 0);
     if (fast) setText(holdLabel, `${format(perSecond, 1)} strikes per second`);
     else if (d.overcharge > 0) setText(holdLabel, `Overcharging ${formatTime(d.overcharge)}`);
@@ -113,18 +88,175 @@ export function buildStormfront(game) {
     setShown(rodNote, !!c.seen.rod && aim === 'ground');
   }
 
-  // --- Aim -----------------------------------------------------------------
+  // --- Aim: the scene ------------------------------------------------------
+  // Flat, stacked layers: sky bands, ridges, three cloud decks, and dark
+  // silhouettes standing on the ground, each with its bonus written beneath
+  // it. Everything is drawn once, then only numbers and positions move.
 
-  const targets = sf.TARGETS.map((t) => {
-    const text = h('span', { class: 'text' });
-    const record = h('span', { class: 'need' });
-    const el = h('button', { class: 'sf-target', onclick: () => sf.setAim(S(), t.id) },
-      h('span', { class: 'name' }, t.name), text, record);
-    return { t, el, text, record };
+  const VX = -225, VW = 1600, VH = 384, G = 300;
+  const ORDER = ['mast', 'cinder', 'tidewater', 'ground', 'grove', 'clockwork', 'hollow', 'sky'];
+  // Where each silhouette is drawn. The page moves them to where they belong
+  // with a transform, so only the open ones are spread across the scene.
+  const NOM = { mast: 82, cinder: 246, tidewater: 411, ground: 575, grove: 739, clockwork: 904, hollow: 1068, sky: 1232 };
+  const TOP = { mast: 98, cinder: 196, tidewater: 268, ground: 284, grove: 176, clockwork: 148, hollow: 150, sky: 92 };
+  const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const f0 = (n) => n.toFixed(0);
+  const P = (pts) => pts.map((q) => q.map(f0).join(' ')).join('L');
+  function rng(seed) {
+    return () => {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const R = rng(31);
+
+  function cogPath(cx, cy, r, teeth, hole) {
+    const pts = [];
+    const r0 = r * 0.72;
+    for (let i = 0; i < teeth; i++) {
+      for (const [f, rr] of [[0, r0], [0.24, r0], [0.3, r], [0.66, r], [0.72, r0]]) {
+        const a = ((i + f) / teeth) * Math.PI * 2;
+        pts.push(`${(cx + Math.cos(a) * rr).toFixed(1)} ${(cy + Math.sin(a) * rr).toFixed(1)}`);
+      }
+    }
+    let d = `M${pts.join('L')}Z`;
+    if (hole) d += ` M${cx} ${cy - hole} A${hole} ${hole} 0 1 0 ${cx + 0.1} ${cy - hole} Z`;
+    return d;
+  }
+  function starPath(cx, cy, big, small) {
+    const pts = [];
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 - Math.PI / 2;
+      const r = i % 2 === 0 ? big : small;
+      pts.push(`${(cx + Math.cos(a) * r).toFixed(1)} ${(cy + Math.sin(a) * r).toFixed(1)}`);
+    }
+    return pts.join(' ');
+  }
+
+  function ridge(seed, lo, hi, fill, cls) {
+    const r = rng(seed);
+    const pts = [[VX - 10, G]];
+    let x = VX - 10;
+    while (x < VX + VW + 10) { x += 40 + r() * 90; pts.push([x, G - (lo + r() * (hi - lo))]); }
+    pts.push([VX + VW + 10, G]);
+    return `<path class="${cls}" d="M${P(pts)}Z" fill="${fill}"/>`;
+  }
+  // A cloud deck: a flat top and a faceted underside, drifting on its own.
+  function deck(seed, base, spread, bell, g, c, fill, rim) {
+    const r = rng(seed), bot = [];
+    let x = -320;
+    while (x < 1470) {
+      const b = Math.max(0, 1 - Math.pow((x - 575) / 560, 2));
+      bot.push([x, base + r() * spread + bell * b]);
+      x += 46 + r() * 64;
+    }
+    return `<g class="${g}"><path class="${c}" d="M-320 -8L${P(bot)}L1470 -8Z" fill="${fill}"/><path d="M${P(bot)}" fill="none" stroke="${rim}" stroke-width="3"/></g>`;
+  }
+
+  function backdrop() {
+    let s = `<defs><pattern id="sf-rain" width="14" height="40" patternUnits="userSpaceOnUse" patternTransform="rotate(12)"><path d="M3 4V16M10 24V36" stroke="#cfdcff" stroke-opacity=".22" stroke-width="1.5"/>${reduced ? '' : '<animateTransform attributeName="patternTransform" type="translate" values="0 0;0 40" dur="1.2s" repeatCount="indefinite" additive="sum"/>'}</pattern></defs>`;
+    [['#1a2140', 0, 60], ['#222b50', 60, 120], ['#2b365e', 120, 180], ['#364570', 180, 230], ['#42527f', 230, 270], ['#51629a', 270, G]]
+      .forEach(([c, a, b]) => { s += `<rect x="${VX}" y="${a}" width="${VW}" height="${b - a + 1}" fill="${c}"/>`; });
+    for (let i = 0; i < 46; i++) s += `<rect x="${f0(VX + R() * VW)}" y="${f0(8 + R() * 120)}" width="2" height="2" fill="#cfdcff" opacity="${(0.25 + R() * 0.4).toFixed(2)}"/>`;
+    s += '<circle cx="-110" cy="124" r="50" fill="#42527f"/><circle cx="-110" cy="124" r="37" fill="#dfe8fa"/>';
+    s += ridge(4, 36, 88, '#3b4a7a', 'rg1') + ridge(9, 14, 46, '#2d3a66', 'rg2');
+    s += deck(2, 44, 36, 0, 'd1', 'cb', '#3a4a78', '#6f84bf');
+    s += deck(8, 30, 34, 10, 'd2', 'cm', '#2c3962', '#52669f');
+    s += deck(5, 14, 16, 74, 'd3', 'cf', '#1c2548', '#3d4f8a');
+    s += `<rect x="${VX}" y="60" width="${VW}" height="${G - 60}" fill="url(#sf-rain)"/>`;
+    s += `<rect x="${VX}" y="${G}" width="${VW}" height="${VH - G}" fill="#1b2244"/><rect x="${VX}" y="${G}" width="${VW}" height="4" fill="#7f95d6"/>`;
+    return s;
+  }
+
+  // The silhouettes. Dark shapes with a rim of light on one side; the aimed one
+  // turns pale. Each is [markup, [x0, y0, x1, y1]] for its click area.
+  const pine = (x, top, ht, wd) => `<polygon class="sil" points="${x},${top} ${x + wd * 0.34},${top + ht * 0.4} ${x + wd * 0.18},${top + ht * 0.4} ${x + wd * 0.46},${top + ht * 0.72} ${x + wd * 0.1},${top + ht * 0.72} ${x + wd * 0.1},${top + ht} ${x - wd * 0.1},${top + ht} ${x - wd * 0.1},${top + ht * 0.72} ${x - wd * 0.46},${top + ht * 0.72} ${x - wd * 0.18},${top + ht * 0.4} ${x - wd * 0.34},${top + ht * 0.4}"/>`;
+  function mastPath() {
+    const cx = NOM.mast;
+    let m = `M${cx - 20} ${G}L${cx - 2} 120M${cx + 20} ${G}L${cx + 2} 120M${cx} 120V98M${cx - 8} 106H${cx + 8}`;
+    const ys = [300, 262, 224, 186, 148];
+    ys.forEach((y, i) => {
+      const t = (300 - y) / 180, xl = cx - 20 + 18 * t, xr = cx + 20 - 18 * t;
+      m += `M${xl} ${y}H${xr}`;
+      if (i < ys.length - 1) {
+        const t2 = (300 - ys[i + 1]) / 180, xl2 = cx - 20 + 18 * t2, xr2 = cx + 20 - 18 * t2;
+        m += `M${xl} ${y}L${xr2} ${ys[i + 1]}M${xr} ${y}L${xl2} ${ys[i + 1]}`;
+      }
+    });
+    return m;
+  }
+  function waveLine() {
+    let w = '';
+    for (let x = 346, up = 1; x < 480; x += 10, up *= -1) w += `${x === 346 ? 'M' : 'L'}${x} ${up > 0 ? 278 : 284}`;
+    return w;
+  }
+  const SIL = {
+    mast: [`<path class="sil o" d="${mastPath()}"/>`, [52, 60, 112, 306]],
+    cinder: ['<polygon class="sil" points="226,300 226,248 238,248 238,196 254,196 254,248 266,248 266,300"/><rect class="sil win" x="240" y="276" width="12" height="24"/>', [214, 190, 278, 306]],
+    tidewater: [`<rect class="water" x="358" y="284" width="106" height="12"/><g class="wave"><path d="${waveLine()}" fill="none" stroke="#9db6ee" stroke-width="3"/></g><rect class="sil" x="352" y="292" width="118" height="10"/><rect class="sil" x="452" y="258" width="6" height="34"/>`, [352, 258, 470, 306]],
+    ground: ['<rect class="sil" x="530" y="290" width="90" height="12"/><path class="sil o" d="M545 292L548 280L551 292M575 292L578 272L581 292M600 292L603 282L606 292"/>', [522, 268, 628, 306]],
+    grove: [pine(739, 176, 124, 66) + pine(784, 222, 78, 44) + pine(698, 236, 64, 36), [690, 166, 796, 306]],
+    clockwork: [`<polygon class="sil" points="884,300 884,206 924,206 924,300"/><rect class="sil win" x="899" y="238" width="10" height="24"/><path class="sil cogspin" fill-rule="evenodd" d="${cogPath(904, 178, 30, 10, 8)}"/>`, [864, 144, 944, 306]],
+    hollow: ['<polygon class="sil" points="1048,300 1058,200 1074,150 1090,210 1092,300"/><polygon class="sil facet" points="1074,150 1090,210 1092,300 1074,300"/><polygon class="sil" points="1092,300 1100,236 1112,264 1114,300"/><polygon class="sil" points="1024,300 1032,252 1046,276 1050,300"/><polygon class="sil facet" points="1032,252 1046,276 1050,300 1038,300"/>', [1020, 144, 1116, 306]],
+    sky: [`<polygon class="sil" points="${starPath(1232, 128, 38, 9)}"/><polygon class="sil" points="${starPath(1286, 178, 15, 4)}"/><polygon class="sil" points="${starPath(1180, 188, 11, 3)}"/>`, [1160, 86, 1306, 206]],
+  };
+
+  const NSV = SVG;
+  const mk = (tag, a) => { const e = document.createElementNS(NSV, tag); for (const k in a) e.setAttribute(k, a[k]); return e; };
+
+  // Build the scene once.
+  let svgMarkup = `<svg id="sf-sv" viewBox="${VX} 0 ${VW} ${VH}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Targets for the next strike">`;
+  svgMarkup += backdrop();
+  for (const id of ORDER) {
+    const [inner, [x0, y0, x1, y1]] = SIL[id];
+    svgMarkup += `<g class="pos" data-aim="${id}" data-sil="${id}"><g class="st">${inner}<path class="mkr" d="M${NOM[id] - 9} ${y0 - 26}h18l-9 14z"/><rect class="hit" x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}"/></g></g>`;
+  }
+  for (const id of ORDER) {
+    svgMarkup += `<g class="lab" data-aim="${id}" data-lab="${id}"><text class="n" y="326"></text><text class="r" y="345"></text><text class="w" y="364"></text></g>`;
+  }
+  svgMarkup += `<g id="sf-fx"></g><rect class="flash" id="sf-flash" x="${VX}" y="0" width="${VW}" height="${VH}"/></svg>`;
+
+  const scene = h('div', { class: 'sf-scene' });
+  scene.innerHTML = svgMarkup;
+  const sv = scene.querySelector('#sf-sv');
+  const fxLayer = scene.querySelector('#sf-fx');
+  const flashRect = scene.querySelector('#sf-flash');
+  const part = {};
+  for (const id of ORDER) {
+    const sil = scene.querySelector(`[data-sil="${id}"]`);
+    const lab = scene.querySelector(`[data-lab="${id}"]`);
+    part[id] = { sil, lab, st: sil.querySelector('.st'), n: lab.querySelector('.n'), r: lab.querySelector('.r'), w: lab.querySelector('.w') };
+  }
+  scene.addEventListener('click', (e) => {
+    const t = e.target.closest && e.target.closest('[data-aim]');
+    if (t) sf.setAim(S(), t.getAttribute('data-aim'));
   });
-  const aimBox = h('div', { class: 'sf-panel' }, h('h3', {}, 'Aim'),
-    h('p', { class: 'desc' }, 'Pick where the next strike lands. A target is boosted by the biggest strike it has taken. Aimed strikes pay no thunder.'),
-    h('div', { class: 'sf-targets' }, targets.map((k) => k.el)));
+
+  // Cached attribute and visibility changes, so nothing is touched twice.
+  const attr = (el, k, v) => { const key = '__a_' + k; if (el[key] !== v) { el.setAttribute(k, v); el[key] = v; } };
+  const showSvg = (el, on) => { const want = !!on; if (el.__sv !== want) { el.toggleAttribute('hidden', !want); el.__sv = want; } };
+
+  // Which targets are open decides where they stand.
+  const spot = {};
+  let spotKey = '';
+  function layout(open) {
+    const key = open.join();
+    if (key === spotKey) return;
+    spotKey = key;
+    const n = open.length;
+    const gap = n >= 8 ? 150 : n >= 6 ? 164 : 190;
+    open.forEach((id, i) => { spot[id] = 575 + (i - (n - 1) / 2) * gap; });
+    for (const id of ORDER) {
+      const on = open.includes(id);
+      showSvg(part[id].sil, on); showSvg(part[id].lab, on);
+      if (!on) continue;
+      attr(part[id].sil, 'transform', `translate(${spot[id] - NOM[id]} 0)`);
+      for (const k of ['n', 'r', 'w']) attr(part[id][k], 'x', f0(spot[id]));
+    }
+  }
 
   function bonusFor(c, id, record) {
     if (id === 'mast') return sf.mastMult(c, record);
@@ -132,30 +264,106 @@ export function buildStormfront(game) {
     return record.lte(0) ? 1 : Math.pow(1 + record.add(1).log10().toNumber(), struckPower(S()));
   }
 
+  // Strikes are events. Each one draws a fresh jagged bolt, cut out flat, that
+  // fades over about a second. Aimed
+  // strikes flash the sky dimly and swap the clouds' colour for a moment.
+  // Automatic ground strikes faster than one every two seconds are not drawn,
+  // so nothing ever flickers.
+  function jag(x1, y1, x2, y2, rough, depth) {
+    let pts = [[x1, y1], [x2, y2]];
+    for (let k = 0; k < depth; k++) {
+      const nx = [pts[0]];
+      for (let i = 1; i < pts.length; i++) {
+        const [ax, ay] = pts[i - 1], [bx, by] = pts[i];
+        const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy) || 1, o = (Math.random() - 0.5) * rough;
+        nx.push([(ax + bx) / 2 - (dy / len) * o, (ay + by) / 2 + (dx / len) * o], [bx, by]);
+      }
+      pts = nx;
+      rough /= 1.9;
+    }
+    return pts;
+  }
+  function taper(pts, w0, w1) {
+    const L = [], Rr = [];
+    pts.forEach((q, i) => {
+      const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
+      const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1, w = (w0 + (w1 - w0) * i / (pts.length - 1)) / 2;
+      L.push([q[0] - dy / len * w, q[1] + dx / len * w]);
+      Rr.push([q[0] + dy / len * w, q[1] - dx / len * w]);
+    });
+    return 'M' + P(L.concat(Rr.reverse())) + 'Z';
+  }
+  function boltOrigin(x2) {
+    const bell = Math.max(0, 1 - Math.pow((x2 - 575) / 560, 2));
+    return [x2 + (Math.random() - 0.5) * 120, 58 + 40 * bell];
+  }
+  function strikeAt(id, aimed) {
+    const x2 = spot[id];
+    if (x2 === undefined) return;
+    const [x1, y1] = boltOrigin(x2);
+    const grp = mk('g', { class: 'bolt' });
+    const main = jag(x1, y1, x2, TOP[id], 56, 4);
+    grp.append(mk('path', { class: 'bg', d: taper(main, 26, 8) }), mk('path', { class: 'bc', d: taper(main, 11, 3) }));
+    if (aimed) {
+      for (let b = 0; b < 2; b++) {
+        const [bx, by] = main[2 + Math.floor(Math.random() * (main.length - 6))];
+        const br = jag(bx, by, bx + (Math.random() < 0.5 ? -1 : 1) * 40, by + 70, 18, 3);
+        grp.append(mk('path', { class: 'bc', d: taper(br, 7, 1) }));
+      }
+    }
+    fxLayer.append(grp);
+    if (aimed && !reduced) {
+      sv.classList.add('lit');
+      setTimeout(() => sv.classList.remove('lit'), 420);
+      flashRect.classList.remove('go'); void flashRect.getBoundingClientRect(); flashRect.classList.add('go');
+    }
+    setTimeout(() => grp.remove(), 1500);
+    if (!reduced) { const st = part[id].st; st.classList.remove('shake'); void st.getBoundingClientRect(); st.classList.add('shake'); }
+  }
+
+  let lastStrikes = null;
+  let lastAim = 'ground';
+  const aimDetail = h('p', { class: 'sf-aimdetail' });
+  const aimBox = h('div', { class: 'sf-panel sf-aim' },
+    h('p', { class: 'desc' }, 'Pick where the next strike lands. A target is boosted by the biggest strike it has taken. Aimed strikes pay no thunder.'),
+    scene, aimDetail);
+  scene.append(strikeBar);
+
   function updateAim(c, d) {
     const aim = d.aimed ? c.aim : 'ground';
     const worldPower = POWER[struckPower(S())];
     const mastPower = POWER[c.fulgUp.ion ? sf.BAL.mastPowerIon : sf.BAL.mastPower];
-    for (const k of targets) {
-      const id = k.t.id;
-      const open = sf.targetOpen(S(), id);
-      setShown(k.el, open);
-      if (!open) continue;
-      setClass(k.el, 'aimed', aim === id);
+    const open = ORDER.filter((id) => sf.targetOpen(S(), id));
+    layout(open);
+
+    for (const id of open) {
+      const k = part[id];
+      const on = aim === id;
+      const name = sf.TARGETS.find((x) => x.id === id).name;
+      setClass(k.st, 'aimed', on);
+      setClass(k.lab, 'aimed', on);
+      setText(k.n, on ? `[ ${name} ]` : name);
       if (id === 'ground') {
-        setText(k.text, 'Thunder');
-        setShown(k.record, false);
+        setText(k.r, 'Thunder');
+        setText(k.w, '');
         continue;
       }
-      const what = id === 'sky' ? 'All starlight' : id === 'mast' ? 'Charge' : k.t.what;
-      const power = id === 'sky' ? POWER[sf.skyPower(S())] : id === 'mast' ? mastPower : worldPower;
-      setText(k.text, `${what} ×(1 + powers of ten)${power}`);
       const record = sf.recordAt(c, id);
-      let line = record.gt(0) ? `${amount(record)} → ${formatMult(bonusFor(c, id, record))}` : 'Not struck';
-      if (d.strike.gt(record)) line += `   now ${formatMult(bonusFor(c, id, d.strike))}`;
-      setShown(k.record, true);
-      setText(k.record, line);
+      const has = record.gt(0);
+      setText(k.r, has ? formatMult(bonusFor(c, id, record)) : 'Not struck');
+      setText(k.w, d.strike.gt(record) ? `now ${formatMult(bonusFor(c, id, d.strike))}` : '');
     }
+
+    // What the aimed target does, in one line under the scene.
+    let detail = 'Ground: strikes pay thunder.';
+    if (aim !== 'ground') {
+      const t = sf.TARGETS.find((x) => x.id === aim);
+      const what = aim === 'sky' ? 'All starlight' : aim === 'mast' ? 'Charge' : t.what;
+      const power = aim === 'sky' ? POWER[sf.skyPower(S())] : aim === 'mast' ? mastPower : worldPower;
+      const record = sf.recordAt(c, aim);
+      detail = `${t.name}: ${what} ×(1 + powers of ten in its biggest strike)${power}. Biggest strike ${record.gt(0) ? amount(record) : 'none yet'}.`;
+    }
+    setText(aimDetail, detail);
   }
 
   // --- Feeds, the front, sources --------------------------------------------
@@ -224,9 +432,10 @@ export function buildStormfront(game) {
   });
   const fulgBox = h('div', { class: 'sf-panel gold' }, h('h3', {}, 'Fulgurite', fulgText), fulgGrid.el);
 
-  const stormPanel = h('div', { class: 'sf-layout' },
-    h('div', { class: 'sf-col' }, shine.el, cloudBox, pass.el),
-    h('div', { class: 'sf-col' }, aimBox, feedBox, sources.el));
+  const stormPanel = h('div', {}, shine.el, aimBox,
+    h('div', { class: 'sf-layout' },
+      h('div', { class: 'sf-col' }, cloudBox),
+      h('div', { class: 'sf-col' }, feedBox, pass.el, sources.el)));
   const tabs = subTabs([
     { id: 'storm', label: 'Storm', panel: stormPanel, open: () => true },
     { id: 'peals', label: 'Peals', panel: pealBox, open: (c) => c.bestPeals >= 1 },
@@ -236,7 +445,7 @@ export function buildStormfront(game) {
     choose: (id) => { S().ui.stormfrontTab = id; },
     visited: () => F().seen,
   });
-  const el = h('section', { class: 'sf', 'data-world': 'stormfront' }, sky, ink, strip, tabs.nav, tabs.panels);
+  const el = h('section', { class: 'sf', 'data-world': 'stormfront' }, strip, tabs.nav, tabs.panels);
 
   function update() {
     const c = F();
@@ -249,13 +458,23 @@ export function buildStormfront(game) {
     setShown(speedText, p > 1);
     setText(speedText, `Gamespeed: ${formatInt(p)}×`);
 
-    tabs.update((tab) => tab.open(c));
+    const active = tabs.update((tab) => tab.open(c));
+    // Draw a strike that happened since the last frame, where it landed.
+    if (lastStrikes !== null && c.strikes > lastStrikes && active.id === 'storm' && c.seen.mast && !document.hidden) {
+      const aimed = lastAim !== 'ground';
+      if (aimed || p / sf.calc(S()).holdMax < 0.5) strikeAt(lastAim, aimed);
+    }
+    lastStrikes = c.strikes;
+    lastAim = d.aimed ? c.aim : 'ground';
     shine.set(d.shine, c.pending, p);
     setShown(startBtn, !c.open);
     setShown(cloudLive, c.open);
     setClass(cloudBox, 'clear', !c.open);
     if (c.open) updateCloud(c, d);
-    setShown(aimBox, c.open && !!c.seen.mast);
+    const sceneOn = c.open && !!c.seen.mast;
+    const home = sceneOn ? strikeBar : strikeSlot;
+    if (strikeGroup.parentNode !== home) home.append(strikeGroup);
+    setShown(aimBox, sceneOn);
     if (c.open && c.seen.mast) updateAim(c, d);
 
     const free = !!c.fulgUp.spotter;

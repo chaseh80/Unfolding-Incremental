@@ -1,0 +1,156 @@
+/* Cinder: a forge. Charcoal page, ember orange, white heat. The scene is the
+   Layers style (flat cut-paper shapes). Everything outside it is the plain
+   minimal look: monospace text on the page, outlines only on what you click. */
+
+#app:has(section.cd:not([hidden])) { max-width: 1680px; padding: 0 28px 60px; }
+html:has(section.cd:not([hidden])), html:has(section.cd:not([hidden])) body { background: transparent; }
+html:has(section.cd:not([hidden])) { background: #0a0807; }
+
+@font-face { font-family: 'Josefin'; src: url(../../fonts/josefin-sans-latin-400-normal.woff2) format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Josefin'; src: url(../../fonts/josefin-sans-latin-600-normal.woff2) format('woff2'); font-weight: 600; font-display: swap; }
+
+.cd {
+  --ink: #f1e6d6;
+  --dim: #a08f7e;
+  --line: #4a352a;
+  --ember: #ff8a2a;
+  --heat: #ffe3a8;
+  --ash: #cfc6b8;
+  --ash-deep: #6b6258;
+  --glass: #8fd9cf;
+  --glass-deep: #2c6f68;
+  --accent: var(--ember);
+  position: relative; color: var(--ink); text-align: center;
+  font-family: Consolas, 'Lucida Console', 'Courier New', monospace; font-variant-numeric: tabular-nums;
+}
+.cd .ash-accent { --accent: var(--ash); --deep: var(--ash-deep); }
+.cd .glass-accent { --accent: var(--glass); --deep: var(--glass-deep); }
+
+/* --- Top strip ------------------------------------------------------------- */
+.cd-strip { display: flex; justify-content: center; gap: 60px; padding: 18px 0 6px; }
+.cd-stat b { display: block; font-size: 26px; font-weight: 400; line-height: 1.15; color: var(--ember); }
+.cd-stat span { font-size: 13px; color: var(--dim); }
+.cd-speed { position: absolute; right: 0; top: 6px; font-size: 12px; color: var(--dim); }
+
+.cd .subtabs { display: flex; justify-content: center; gap: 6px; margin: 10px 0 18px; border: 0; background: none; }
+.cd .subtabs button { background: #17100c; border: 1px solid #6a4a38; border-radius: 0; color: var(--ink); font: inherit; padding: 5px 16px; cursor: pointer; }
+.cd .subtabs button.on { background: #3a1c0c; border-color: var(--ember); color: #fff; }
+.cd .subtabs button.fresh { border-color: var(--heat); }
+
+/* --- Text straight on the page ---------------------------------------------- */
+.cd .box, .cd .notice { background: none; border: 0; border-radius: 0; padding: 0; margin: 0 0 26px; }
+.cd h3 { display: block; margin: 0 0 8px; font-size: 16px; font-weight: 400; color: var(--ember); text-transform: none; letter-spacing: 0; }
+.cd .notice h3 { color: #fff; }
+.cd h3 .count { color: var(--ink); margin-left: 8px; }
+.cd p.desc, .cd p.note, .cd p.lead { color: var(--dim); margin: 4px auto; font-size: 13px; max-width: 620px; }
+.cd .row { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 14px; }
+.cd .figure { font-size: 34px; font-weight: 400; color: var(--accent); margin-top: 6px; }
+.cd .figure small { font-size: 14px; color: var(--dim); margin-left: 8px; }
+.cd kbd { border-radius: 0; background: transparent; border: 1px solid var(--line); color: var(--dim); }
+
+.cd .act { border-radius: 0; clip-path: none; background: #1a110c; color: var(--ink); border: 1px solid #8a5a3e; box-shadow: none; font: inherit; padding: 7px 14px; }
+.cd .act:hover:not(:disabled) { background: #2a1810; }
+.cd .act.primary:not(:disabled) { background: #3a1c0c; border-color: var(--ember); color: #fff; box-shadow: 0 0 12px rgba(255, 138, 42, 0.3); }
+.cd .act:disabled { opacity: 0.4; }
+.cd .auto { color: var(--ember); font-size: 13px; margin: 0; }
+
+.cd-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 60px; max-width: 1300px; margin: 0 auto; }
+.cd-col { min-width: 0; }
+@media (max-width: 900px) { .cd-layout { grid-template-columns: 1fr; } }
+
+.cd .box.feed { display: flex; align-items: center; justify-content: center; gap: 24px; text-align: left; margin: 0; padding: 6px 0; }
+.cd .feed .feed-main { flex: none; min-width: 230px; }
+.cd .feed-buy { display: flex; gap: 6px; align-items: center; }
+.cd .feed h3 { margin: 0; color: var(--ink); }
+.cd .feed p.desc { margin: 2px 0 0; max-width: none; }
+.cd .cd-feeds .row { margin-top: 12px; }
+
+.cd table.breakdown { max-width: 360px; margin: 0 auto; text-align: left; font-size: 13px; width: 100%; }
+.cd table.breakdown td { padding: 3px 0; color: var(--dim); }
+.cd table.breakdown td:last-child { text-align: right; color: var(--ink); }
+.cd table.breakdown tr.total td { border-top: 1px solid var(--line); color: #fff; padding-top: 6px; }
+
+.cd .dial { max-width: 420px; margin: 8px auto; }
+.cd .dial input[type=range] { accent-color: var(--ember); max-width: 100%; }
+
+/* --- Tiles: plain squares, lit from the middle when they count --------------- */
+.cd ul.points, .cd .grid, .cd-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 1150px; margin: 14px auto 0; padding: 0; list-style: none; }
+.cd ul.points li, .cd-tile, .cd .upgrade {
+  width: 200px; min-height: 150px; border: 1px solid #d8c6b0; border-radius: 0; background: #0d0907; color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 8px 10px; font: inherit; font-size: 13px; text-align: center; box-shadow: none;
+}
+.cd ul.points .deg, .cd-tile .at { width: auto; font-size: 12px; font-weight: 400; color: var(--dim); text-align: center; }
+.cd ul.points .what { display: flex; flex-direction: column; gap: 4px; }
+.cd ul.points .what b { font-size: 14px; font-weight: 400; color: var(--ember); font-style: normal; }
+.cd ul.points .what p { margin: 0; font-size: 12px; color: var(--ink); }
+.cd ul.points li.lit, .cd-tile.lit { background: radial-gradient(circle, #c24a10 0%, #0d0907 85%); color: #fff; }
+.cd ul.points li.lit .what b { color: #fff; }
+.cd ul.points li.lit .deg, .cd-tile.lit .at { color: var(--heat); }
+.cd ul.points li.unknown { border-color: #4a352a; }
+.cd ul.points li.unknown .what { font-style: normal; color: var(--dim); }
+.cd-tile .text { font-size: 12px; }
+
+.cd .upgrade .name { font-size: 14px; font-weight: 400; color: var(--accent); }
+.cd .upgrade .text, .cd .upgrade .need { font-size: 12px; color: var(--ink); }
+.cd .upgrade .need.unmet { color: #d48a6a; }
+.cd .upgrade .cost { margin-top: auto; font-size: 12px; color: var(--accent); }
+.cd .upgrade.can { border-color: var(--accent); cursor: pointer; }
+.cd .upgrade.can:hover { background: #1a120d; }
+.cd .upgrade.cant { opacity: 0.5; }
+.cd .upgrade.owned { border-color: var(--accent); background: radial-gradient(circle, var(--deep) 0%, #0d0907 85%); }
+.cd .upgrade.owned .name { color: #fff; }
+
+/* --- The forge ----------------------------------------------------------------- */
+.cd-scene { position: relative; width: min(100vw, 1600px); margin: 6px 0 14px 50%; transform: translateX(-50%); aspect-ratio: 1600 / 420; text-align: left; }
+.cd-scene > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: hidden; }
+.cd-scene .r { font: 400 13px 'Josefin', sans-serif; letter-spacing: 0.08em; fill: #8a7766; }
+.cd-scene .w { font: 600 13px 'Josefin', sans-serif; letter-spacing: 0.08em; fill: #fff0cf; }
+.cd-scene .tick rect { fill: #5a4434; }
+.cd-scene .tick.lit rect { fill: #ff8a2a; }
+.cd-scene .tick.lit .r { fill: #ffb870; }
+
+/* Dark shapes with a one-sided rim of light. */
+.cd-scene .dark { fill: #050404; }
+.cd-scene .rim { filter: drop-shadow(-2px 0 0 #6a3a20); }
+.cd-scene .rim.hot { filter: drop-shadow(-2px 0 0 #a2511f); }
+.cd-scene .mouth { fill: #0e0806; }
+.cd-scene .ash { fill: #6b6258; stroke: #8a8070; stroke-width: 2; stroke-linejoin: miter; }
+.cd-scene:not(.lit) .flames, .cd-scene:not(.lit) .embers, .cd-scene:not(.lit) .halo, .cd-scene:not(.lit) .smoke { display: none; }
+.cd-scene.lit .mouth { fill: #3a1408; }
+.cd-scene:not(.lit) .coals { opacity: 0.45; }
+
+/* Slow, looping motion only. */
+.cd-scene .f1, .cd-scene .f2, .cd-scene .f3, .cd-scene .f4 { transform-box: fill-box; transform-origin: 50% 100%; animation: cd-sway 4s ease-in-out infinite alternate; }
+.cd-scene .f2 { animation-duration: 5s; } .cd-scene .f3 { animation-duration: 6s; } .cd-scene .f4 { animation-duration: 7s; }
+@keyframes cd-sway { from { transform: scaleY(0.94); } to { transform: scaleY(1.06); } }
+.cd-scene .em { animation: cd-rise 7s linear infinite; opacity: 0; }
+@keyframes cd-rise { 0% { transform: translate(0, 0); opacity: 0; } 12% { opacity: 1; } 85% { opacity: 0.6; } 100% { transform: translate(var(--dx), -170px); opacity: 0; } }
+.cd-scene .pf { animation: cd-smoke 9s linear infinite; opacity: 0; }
+@keyframes cd-smoke { 0% { transform: translate(0, 0); opacity: 0; } 15% { opacity: 0.7; } 100% { transform: translate(24px, -52px); opacity: 0; } }
+
+/* The main control, under the furnace. Monospace and fixed width so it never moves. */
+.cd-bar { position: absolute; left: 50%; bottom: 4%; transform: translateX(-50%); z-index: 2; }
+.cd-bar .row { position: relative; display: block; margin: 0; }
+.cd .cd-bar .act.primary:not(:disabled), .cd .cd-bar .act { display: block; width: 34ch; text-align: center; background: #ff8a2a; color: #1a0c04; border: 0; border-radius: 0; box-shadow: 4px 4px 0 #050404; font: 15px/1.2 Consolas, 'Lucida Console', 'Courier New', monospace; padding: 12px 0; white-space: nowrap; overflow: hidden; transition: transform 0.1s, box-shadow 0.1s; }
+.cd .cd-bar .act.primary:hover:not(:disabled) { background: #ffa04d; border: 0; transform: translate(2px, 2px); box-shadow: 2px 2px 0 #050404; }
+.cd .cd-bar .act:disabled { opacity: 0.5; box-shadow: none; background: #3a2a20; color: var(--ink); }
+.cd-bar kbd { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin-left: 16px; background: #2a1a12; color: var(--ink); border: 0; font: 12px Consolas, monospace; }
+
+@media (prefers-reduced-motion: reduce) { .cd-scene * { animation: none !important; } .cd-scene .em, .cd-scene .pf { display: none; } }
+.cd .panel > .box { margin-top: 20px; }
+
+/* Flame colour by temperature (stage 0 is the orange drawn in the scene). */
+.cd-scene[data-stage="1"] .f1 { fill: #c8300f; } .cd-scene[data-stage="1"] .f2 { fill: #f0561a; } .cd-scene[data-stage="1"] .f3 { fill: #ff9a2e; } .cd-scene[data-stage="1"] .f4 { fill: #ffe08a; }
+.cd-scene[data-stage="1"] .halo circle { fill: #e8441a; } .cd-scene[data-stage="1"] #cd-fill { fill: #f0561a; }
+.cd-scene[data-stage="2"] .f1 { fill: #f08a1a; } .cd-scene[data-stage="2"] .f2 { fill: #ffc93a; } .cd-scene[data-stage="2"] .f3 { fill: #ffe98a; } .cd-scene[data-stage="2"] .f4 { fill: #fffbe6; }
+.cd-scene[data-stage="2"] .halo circle { fill: #ffb02e; } .cd-scene[data-stage="2"] #cd-fill { fill: #ffc93a; }
+.cd-scene[data-stage="3"] .f1 { fill: #ffc04a; } .cd-scene[data-stage="3"] .f2 { fill: #ffe6a0; } .cd-scene[data-stage="3"] .f3 { fill: #fff6dc; } .cd-scene[data-stage="3"] .f4 { fill: #ffffff; }
+.cd-scene[data-stage="3"] .halo circle { fill: #ffe3a8; } .cd-scene[data-stage="3"] #cd-fill { fill: #ffe6a0; }
+.cd-scene[data-stage="4"] .f1 { fill: #4f8cff; } .cd-scene[data-stage="4"] .f2 { fill: #8fc0ff; } .cd-scene[data-stage="4"] .f3 { fill: #d6ebff; } .cd-scene[data-stage="4"] .f4 { fill: #ffffff; }
+.cd-scene[data-stage="4"] .halo circle { fill: #5a9bff; } .cd-scene[data-stage="4"] #cd-fill { fill: #8fc0ff; }
+.cd-scene[data-stage="5"] .f1 { fill: #8a6cff; } .cd-scene[data-stage="5"] .f2 { fill: #b9a6ff; } .cd-scene[data-stage="5"] .f3 { fill: #e6deff; } .cd-scene[data-stage="5"] .f4 { fill: #ffffff; }
+.cd-scene[data-stage="5"] .halo circle { fill: #9a7cff; } .cd-scene[data-stage="5"] #cd-fill { fill: #b9a6ff; }
+.cd-scene[data-stage="1"] .mouth, .cd-scene[data-stage="2"] .mouth { fill: #3f1a08; }
+.cd-scene[data-stage="3"] .mouth { fill: #4a3314; }
+.cd-scene[data-stage="4"] .mouth { fill: #0e1c3a; }
+.cd-scene[data-stage="5"] .mouth { fill: #1c1440; }

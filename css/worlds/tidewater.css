@@ -1,0 +1,151 @@
+
+/* Tidewater: a shore at night. Slate and deep sea blue, salt white, driftwood tan, kelp green.
+   The scene is the Layers style (flat cut-paper shapes). Everything outside
+   it is the plain minimal look: monospace text on the page, outlines only on
+   what you click or reach, tiles lit from the middle when they count. */
+
+#app:has(section.tw:not([hidden])) { max-width: 1680px; padding: 0 28px 60px; }
+html:has(section.tw:not([hidden])), html:has(section.tw:not([hidden])) body { background: transparent; }
+html:has(section.tw:not([hidden])) { background: #060c11; }
+
+@font-face { font-family: 'Josefin'; src: url(../../fonts/josefin-sans-latin-400-normal.woff2) format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Josefin'; src: url(../../fonts/josefin-sans-latin-600-normal.woff2) format('woff2'); font-weight: 600; font-display: swap; }
+
+.tw {
+  --ink: #e6eef2;
+  --dim: #86a0b0;
+  --line: #2b4254;
+  --acc: #5fa8cf;
+  --acc2: #e6eef2;
+  --btn: #0e1a24;
+  --btn-line: #3a6684;
+  --btn-hover: #16293a;
+  --btn-on: #123a54;
+  --glow: rgba(95, 168, 207, 0.3);
+  --tile: #09131b;
+  --tile-line: #c6d6df;
+  --lit: #2a6f96;
+  --main: #5fa8cf;
+  --main-ink: #04121b;
+  --main-hover: #7fbde0;
+  --accent: var(--acc);
+  position: relative; color: var(--ink); text-align: center;
+  font-family: Consolas, 'Lucida Console', 'Courier New', monospace; font-variant-numeric: tabular-nums;
+}
+
+/* --- Top strip --------------------------------------------------------------- */
+.tw-strip { display: flex; justify-content: center; flex-wrap: wrap; gap: 20px 60px; padding: 18px 0 6px; }
+.tw-stat b { display: block; font-size: 26px; font-weight: 400; line-height: 1.15; color: var(--acc); }
+.tw-stat span { font-size: 13px; color: var(--dim); }
+.tw-speed { position: absolute; right: 0; top: 6px; font-size: 12px; color: var(--dim); }
+
+.tw .subtabs { display: flex; justify-content: center; gap: 6px; margin: 10px 0 18px; border: 0; background: none; }
+.tw .subtabs button { background: var(--btn); border: 1px solid var(--btn-line); border-radius: 0; color: var(--ink); font: inherit; padding: 5px 16px; cursor: pointer; }
+.tw .subtabs button.on { background: var(--btn-on); border-color: var(--acc); color: #fff; }
+.tw .subtabs button.fresh { border-color: var(--acc2); }
+
+/* --- Text straight on the page ----------------------------------------------- */
+.tw .box, .tw .notice { background: none; border: 0; border-radius: 0; padding: 0; margin: 0 0 26px; }
+.tw .panel > .box { margin-top: 20px; }
+.tw h3 { display: block; margin: 0 0 8px; font-size: 16px; font-weight: 400; color: var(--acc); text-transform: none; letter-spacing: 0; }
+.tw .notice h3 { color: #fff; }
+.tw h3 .count { color: var(--ink); margin-left: 8px; }
+.tw p.desc, .tw p.note, .tw p.lead { color: var(--dim); margin: 4px auto; font-size: 13px; max-width: 620px; }
+.tw .row { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 14px; }
+.tw .figure { font-size: 34px; font-weight: 400; color: var(--accent); margin-top: 6px; }
+.tw .figure small { font-size: 14px; color: var(--dim); margin-left: 8px; }
+.tw kbd { border-radius: 0; background: transparent; border: 1px solid var(--line); color: var(--dim); }
+
+.tw .act { border-radius: 0; clip-path: none; background: var(--btn); color: var(--ink); border: 1px solid var(--btn-line); box-shadow: none; font: inherit; padding: 7px 14px; }
+.tw .act:hover:not(:disabled) { background: var(--btn-hover); }
+.tw .act.primary:not(:disabled) { background: var(--btn-on); border-color: var(--acc); color: #fff; box-shadow: 0 0 12px var(--glow); }
+.tw .act:disabled { opacity: 0.4; }
+.tw .auto { color: var(--acc); font-size: 13px; margin: 0; }
+.tw select { background: var(--btn); color: var(--ink); border: 1px solid var(--btn-line); border-radius: 0; font: inherit; padding: 5px 8px; }
+
+.tw-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 60px; max-width: 1300px; margin: 0 auto; }
+.tw-col { min-width: 0; }
+@media (max-width: 900px) { .tw-layout { grid-template-columns: 1fr; } }
+
+.tw .box.feed { display: flex; align-items: center; justify-content: space-between; gap: 24px; text-align: left; margin: 0 auto; max-width: 640px; padding: 6px 0; }
+.tw .feed .feed-main { flex: 1; min-width: 0; }
+.tw .feed-buy { display: flex; gap: 6px; align-items: center; justify-content: flex-end; min-width: 150px; }
+.tw .feed h3 { margin: 0; color: var(--ink); }
+.tw .feed p.desc { margin: 2px 0 0; max-width: none; }
+
+.tw table.breakdown { max-width: 360px; margin: 0 auto; text-align: left; font-size: 13px; width: 100%; }
+.tw table.breakdown td { padding: 3px 0; color: var(--dim); }
+.tw table.breakdown td:last-child { text-align: right; color: var(--ink); }
+.tw table.breakdown tr.total td { border-top: 1px solid var(--line); color: #fff; padding-top: 6px; }
+
+.tw .dial { max-width: 420px; margin: 8px auto; }
+.tw .dial input[type=range] { accent-color: var(--acc); max-width: 100%; width: 100%; }
+.tw .meter { max-width: 420px; margin: 8px auto; }
+.tw .meter .bar { height: 10px; border: 1px solid var(--btn-line); background: none; border-radius: 0; overflow: hidden; }
+.tw .meter .fill { background: var(--acc); border-radius: 0; }
+.tw .meter .label { font-size: 12px; color: var(--dim); margin-top: 4px; }
+
+/* --- Tiles: plain squares, lit from the middle when they count ---------------- */
+.tw ul.points, .tw .grid, .tw-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 1150px; margin: 14px auto 0; padding: 0; list-style: none; }
+.tw ul.points li, .tw-tile, .tw .upgrade {
+  width: 200px; min-height: 150px; border: 1px solid var(--tile-line); border-radius: 0; background: var(--tile); color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 8px 10px; font: inherit; font-size: 13px; text-align: center; box-shadow: none;
+}
+.tw ul.points .deg, .tw-tile .at { width: auto; font-size: 12px; font-weight: 400; color: var(--dim); text-align: center; }
+.tw ul.points .what { display: flex; flex-direction: column; gap: 4px; }
+.tw ul.points .what b { font-size: 14px; font-weight: 400; color: var(--acc); font-style: normal; }
+.tw ul.points .what p { margin: 0; font-size: 12px; color: var(--ink); }
+.tw ul.points li.lit, .tw-tile.lit { background: radial-gradient(circle, var(--lit) 0%, var(--tile) 85%); color: #fff; }
+.tw ul.points li.lit .what b { color: #fff; }
+.tw ul.points li.lit .deg, .tw-tile.lit .at { color: var(--acc2); }
+.tw ul.points li.unknown { border-color: var(--line); }
+.tw ul.points li.unknown .what { font-style: normal; color: var(--dim); }
+.tw-tile .text { font-size: 12px; }
+
+.tw .upgrade .name { font-size: 14px; font-weight: 400; color: var(--accent); }
+.tw .upgrade .text, .tw .upgrade .need { font-size: 12px; color: var(--ink); }
+.tw .upgrade .need.unmet { color: #d48a6a; }
+.tw .upgrade .cost { margin-top: auto; font-size: 12px; color: var(--accent); }
+.tw .upgrade.can { border-color: var(--accent); cursor: pointer; }
+.tw .upgrade.can:hover { background: var(--btn-hover); }
+.tw .upgrade.cant { opacity: 0.5; }
+.tw .upgrade.owned { border-color: var(--accent); background: radial-gradient(circle, var(--deep, var(--lit)) 0%, var(--tile) 85%); }
+.tw .upgrade.owned .name { color: #fff; }
+
+/* --- The scene frame and its main control -------------------------------------- */
+.tw-scene { position: relative; width: min(100vw, 1600px); margin: 6px 0 14px 50%; transform: translateX(-50%); aspect-ratio: 1600 / 420; text-align: left; }
+.tw-scene > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: hidden; }
+.tw-scene .r { font: 400 13px 'Josefin', sans-serif; letter-spacing: 0.08em; fill: var(--dim); }
+.tw-scene .w { font: 600 13px 'Josefin', sans-serif; letter-spacing: 0.08em; fill: #fff; }
+.tw-scene .dark { fill: #03070a; }
+.tw-scene .rim { filter: drop-shadow(-2px 0 0 #3d6580); }
+
+.tw-bar { position: absolute; left: 50%; bottom: 4%; transform: translateX(-50%); z-index: 2; }
+.tw-bar .row { position: relative; display: block; margin: 0; }
+.tw .tw-bar .act.primary:not(:disabled), .tw .tw-bar .act { display: block; width: 34ch; text-align: center; background: var(--main); color: var(--main-ink); border: 0; border-radius: 0; box-shadow: 4px 4px 0 #03070a; font: 15px/1.2 Consolas, 'Lucida Console', 'Courier New', monospace; padding: 12px 0; white-space: nowrap; overflow: hidden; transition: transform 0.1s, box-shadow 0.1s; }
+.tw .tw-bar .act.primary:hover:not(:disabled) { background: var(--main-hover); border: 0; transform: translate(2px, 2px); box-shadow: 2px 2px 0 #03070a; }
+.tw .tw-bar .act:disabled { opacity: 0.55; box-shadow: none; background: var(--btn); color: var(--ink); }
+.tw-bar kbd { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin-left: 16px; background: var(--btn); color: var(--ink); border: 0; font: 12px Consolas, monospace; }
+@media (prefers-reduced-motion: reduce) { .tw-scene * { animation: none !important; transition: none !important; } }
+
+.tw .drift-accent { --accent: #c9a57a; --deep: #6b4f30; }
+.tw .tw-feeds .row { margin-top: 12px; }
+.tw .tw-tile { min-height: 110px; }
+.tw .tw-tile select { max-width: 170px; }
+.tw .tw-tile .worth { font-size: 12px; color: var(--ink); }
+
+/* The scene: the land has a rim of moonlight along its top. */
+.tw-scene .land { filter: drop-shadow(0 -2px 0 #4a7490); }
+.tw-scene .saltbank { fill: #e6eef2; stroke: #b7c8d2; stroke-width: 2; stroke-linejoin: miter; }
+.tw-scene .peg.lit rect, .tw-scene .peg.lit polygon { fill: #5fa8cf; }
+.tw-scene .peg.lit .r { fill: #e6eef2; }
+
+/* Slow, looping motion only. The sea moves one wave length and starts again. */
+#tw-sea { transition: transform 1.6s ease-in-out; }
+.tw-scene .wv { animation: tw-wave 6s linear infinite; }
+.tw-scene .wv.w2 { animation-duration: 8s; animation-direction: reverse; }
+.tw-scene .wv.w3 { animation-duration: 10s; }
+@keyframes tw-wave { from { transform: translateX(0); } to { transform: translateX(-60px); } }
+.tw-scene .kb polygon { transform-box: fill-box; transform-origin: 50% 100%; animation: tw-sway 5s ease-in-out infinite alternate; }
+@keyframes tw-sway { from { transform: skewX(-3deg); } to { transform: skewX(3deg); } }
+.tw-scene .brine { transition: none; }

@@ -1,4 +1,4 @@
-// Saving, loading, and a few numbers about the run.
+// Saving, loading, and a few numbers about the run. Look is in css/worlds/options.css.
 import { h, setText, toast, confirmBox } from './dom.js';
 import { formatInt, formatTemp, formatTime } from '../core/num.js';
 import { toExportString, fromExportString } from '../core/save.js';
@@ -52,7 +52,10 @@ export function buildOptions(game) {
 
   const keysBox = h('div', { class: 'box' },
     h('h3', {}, 'Keys'),
-    h('p', { class: 'desc' }, h('kbd', {}, 'M'), ' buys everything in the current world. ', h('kbd', {}, 'B'), " does the current world's first reset. ", h('kbd', {}, 'S'), ' strikes in Stormfront.'));
+    h('div', { class: 'op-keys' },
+      h('kbd', {}, 'M'), h('span', {}, 'Buys everything in the current world.'),
+      h('kbd', {}, 'B'), h('span', {}, "Does the current world's first reset."),
+      h('kbd', {}, 'S'), h('span', {}, 'Strikes in Stormfront.')));
 
   const STATS = [
     ['Time played', (s) => formatTime(s.playtime)],
@@ -69,10 +72,10 @@ export function buildOptions(game) {
     ['Starlight gathered', (s) => formatInt(s.atlas.total)],
     ['Eclipses', (s) => s.eclipse.count],
     ['Folds', (s) => s.cinder.folds + s.tidewater.folds + s.grove.folds + s.clockwork.folds + s.hollow.folds + s.stormfront.folds],
-  ].map(([label, get]) => ({ label, get, dd: h('dd') }));
+  ].map(([label, get]) => ({ label, get, dd: h('b') }));
   const statsBox = h('div', { class: 'box' },
     h('h3', {}, 'Stats'),
-    h('dl', { class: 'stats' }, STATS.map((x) => [h('dt', {}, x.label), x.dd])));
+    h('div', { class: 'op-tiles' }, STATS.map((x) => h('div', { class: 'op-tile' }, x.dd, h('span', {}, x.label)))));
 
   const resetBox = h('div', { class: 'box' },
     h('h3', {}, 'Wipe save'),
@@ -89,7 +92,7 @@ export function buildOptions(game) {
         }),
       }, 'Wipe save')));
 
-  const el = h('section', { class: 'panel' }, saveBox, awayBox, keysBox, statsBox, resetBox);
+  const el = h('section', { class: 'op', 'data-world': 'options' }, h('div', { class: 'panel' }, saveBox, awayBox, keysBox, statsBox, resetBox));
 
   function update() {
     const s = game.state;

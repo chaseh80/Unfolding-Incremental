@@ -113,14 +113,14 @@ const views = [
   { id: 'options', label: 'Options', view: buildOptions(game), open: () => true },
 ];
 for (const v of views) {
-  v.btn = h('button', { onclick: () => { game.state.ui.tab = v.id; game.state.ui.visited[v.id] = true; render(); } }, v.label);
+  v.btn = h('button', { 'data-world': v.id, onclick: () => { game.state.ui.tab = v.id; game.state.ui.visited[v.id] = true; render(); } }, v.label);
 }
 
 document.getElementById('app').append(
   h('header', { class: 'top' },
     h('h1', {}, 'Manifold'),
     h('nav', { class: 'tabs' }, views.map((v) => v.btn)),
-    h('span', { class: 'version' }, 'v0.9')),
+    h('span', { class: 'version' }, 'v0.13')),
   ...views.map((v) => v.view.el));
 
 function currentView() {

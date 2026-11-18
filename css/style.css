@@ -270,3 +270,38 @@ kbd {
 .sky-accent .stars { margin: 2px 0 6px; color: var(--accent); letter-spacing: 4px; font-size: 16px; }
 .sky-accent .muted, .corona-accent .muted { color: var(--muted); }
 .corona-accent label.check b { font-weight: 600; }
+
+/* --- The top bar -------------------------------------------------------------
+   Plain monospace like the pages under it. Each tab carries a small square in
+   its own world's colour; the open tab is outlined in it, and so is the rule
+   under the bar. Layers that are not worlds use a neutral grey. */
+header.top { font-family: Consolas, 'Lucida Console', 'Courier New', monospace; border-bottom: 1px solid var(--tab, var(--line)); --tab: #5a504a; }
+header.top h1 { font: inherit; font-size: 18px; font-weight: 400; letter-spacing: 0.06em; }
+header.top .version { font-size: 12px; }
+nav.tabs { gap: 6px; }
+nav.tabs button { border: 1px solid transparent; border-radius: 0; font: inherit; color: var(--muted); padding: 5px 12px 5px 10px; display: inline-flex; align-items: center; gap: 8px; }
+nav.tabs button::before { content: ''; width: 7px; height: 7px; background: var(--w, #7a706a); opacity: 0.55; flex: none; }
+nav.tabs button:hover { color: var(--text); }
+nav.tabs button:hover::before { opacity: 1; }
+nav.tabs button.on { background: none; color: #fff; border-color: var(--w, #7a706a); }
+nav.tabs button.on::before { opacity: 1; }
+nav.tabs button.fresh::after { display: none; }
+nav.tabs button.fresh::before { opacity: 1; box-shadow: 0 0 6px var(--w); }
+nav.tabs button[data-world=cinder] { --w: #ff8a2a; }
+nav.tabs button[data-world=tidewater] { --w: #5fa8cf; }
+nav.tabs button[data-world=grove] { --w: #8fcf7a; }
+nav.tabs button[data-world=clockwork] { --w: #d9b45a; }
+nav.tabs button[data-world=hollow] { --w: #b28cf0; }
+nav.tabs button[data-world=stormfront] { --w: #a9d8ff; }
+nav.tabs button[data-world=atlas] { --w: #c8c0b4; }
+nav.tabs button[data-world=eclipse] { --w: #ffb86b; }
+nav.tabs button[data-world=observatory] { --w: #f2e3a0; }
+header.top:has(button.on[data-world=cinder]) { --tab: #ff8a2a; }
+header.top:has(button.on[data-world=tidewater]) { --tab: #5fa8cf; }
+header.top:has(button.on[data-world=grove]) { --tab: #8fcf7a; }
+header.top:has(button.on[data-world=clockwork]) { --tab: #d9b45a; }
+header.top:has(button.on[data-world=hollow]) { --tab: #b28cf0; }
+header.top:has(button.on[data-world=stormfront]) { --tab: #a9d8ff; }
+header.top:has(button.on[data-world=atlas]) { --tab: #c8c0b4; }
+header.top:has(button.on[data-world=eclipse]) { --tab: #ffb86b; }
+header.top:has(button.on[data-world=observatory]) { --tab: #f2e3a0; }

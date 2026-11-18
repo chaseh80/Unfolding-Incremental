@@ -250,3 +250,77 @@ html:has(section.sf:not([hidden])) { background: #060a12; }
 .sf .meter.storm.fast .fill { background: repeating-linear-gradient(110deg, #35609a 0 14px, var(--bolt) 14px 28px); background-size: 200% 100%; animation: sf-stream 0.9s linear infinite; }
 @keyframes sf-stream { from { background-position: 0 0; } to { background-position: -61px 0; } }
 .sf-panel > p.desc { max-width: 620px; margin: 0 auto 12px; }
+
+/* The Aim scene below is the Layers style (flat cut-paper shapes, hard edges).
+   Everything above it is the third-pass look and is unchanged. */
+
+@font-face { font-family: 'Josefin'; src: url(../../fonts/josefin-sans-latin-400-normal.woff2) format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Josefin'; src: url(../../fonts/josefin-sans-latin-600-normal.woff2) format('woff2'); font-weight: 600; font-display: swap; }
+
+/* --- The scene --------------------------------------------------------------- */
+
+.sf-scene { position: relative; width: min(100vw, 1600px); margin: 6px 0 0 50%; transform: translateX(-50%); aspect-ratio: 1600 / 384; }
+.sf-scene > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: hidden; }
+.sf-aimdetail { margin: 10px auto 0; font-size: 14px; color: var(--ink); max-width: 900px; }
+
+.sf-scene .n { font: 600 14px 'Josefin', sans-serif; letter-spacing: 0.22em; text-transform: uppercase; fill: #e8eefc; text-anchor: middle; }
+.sf-scene .r { font: 400 14px 'Josefin', sans-serif; fill: #93a3cf; text-anchor: middle; }
+.sf-scene .w { font: 600 14px 'Josefin', sans-serif; fill: #f0c85a; text-anchor: middle; }
+.sf-scene .lab { cursor: pointer; }
+.sf-scene .lab.aimed .n { fill: #fff; }
+
+/* Silhouettes: dark flat shapes lit from one side. */
+.sf-scene .sil { fill: #0b1024; stroke: #0b1024; stroke-width: 2; stroke-linejoin: miter; }
+.sf-scene .sil.o { fill: none; stroke-width: 3; }
+.sf-scene .sil.win { fill: #f0c85a; stroke: none; }
+.sf-scene .sil.facet { fill: #1d2a5c; stroke: none; }
+.sf-scene .st { cursor: pointer; filter: drop-shadow(-2px 0 0 #7088cc); }
+.sf-scene .st:hover .sil:not(.win):not(.facet) { fill: #17204a; stroke: #17204a; }
+.sf-scene .st:hover .sil.o { fill: none; }
+.sf-scene .st.aimed { filter: drop-shadow(-2px 0 0 #fff); }
+.sf-scene .st.aimed .sil:not(.win):not(.facet) { fill: #eef4ff; stroke: #eef4ff; }
+.sf-scene .st.aimed .sil.o { fill: none; }
+.sf-scene .st.aimed .sil.facet { fill: #bcd0f5; }
+.sf-scene .hit { fill: transparent; stroke: none; }
+.sf-scene .mkr { display: none; fill: #f0c85a; animation: sf-bob 1.6s ease-in-out infinite alternate; }
+.sf-scene .st.aimed .mkr { display: block; }
+@keyframes sf-bob { from { transform: translateY(0); } to { transform: translateY(8px); } }
+.sf-scene .water { fill: #5d7fc4; }
+.sf-scene .wave { animation: sf-wave 6s linear infinite; }
+@keyframes sf-wave { from { transform: translateX(0); } to { transform: translateX(-20px); } }
+.sf-scene .cogspin { transform-box: fill-box; transform-origin: center; animation: sf-spin 40s linear infinite; }
+@keyframes sf-spin { to { transform: rotate(360deg); } }
+
+/* Three cloud decks, each drifting at its own pace. */
+.sf-scene .d1 { animation: sf-drift 150s ease-in-out infinite alternate; }
+.sf-scene .d2 { animation: sf-drift 100s ease-in-out infinite alternate-reverse; }
+.sf-scene .d3 { animation: sf-drift 70s ease-in-out infinite alternate; }
+@keyframes sf-drift { from { transform: translateX(-34px); } to { transform: translateX(38px); } }
+.sf-scene svg.lit .cf, .sf-scene .lit .cf { fill: #3b4b8c; }
+.sf-scene .lit .cm { fill: #4a5c9c; }
+
+/* Strikes: a flat bolt that fades over a second. */
+.sf-scene .bg { fill: rgba(188, 212, 255, 0.55); }
+.sf-scene .bc { fill: #fff; }
+.sf-scene .bolt { animation: sf-after 1.3s linear forwards; }
+@keyframes sf-after { 0%, 8% { opacity: 1; } 12% { opacity: 0.3; } 18% { opacity: 0.9; } 100% { opacity: 0; } }
+.sf-scene .flash { fill: #e6efff; opacity: 0; pointer-events: none; }
+.sf-scene .flash.go { animation: sf-whiteout 0.45s ease-out; }
+@keyframes sf-whiteout { 0% { opacity: 0.16; } 20% { opacity: 0.03; } 30% { opacity: 0.1; } 100% { opacity: 0; } }
+.sf-scene .st.shake { animation: sf-shake 0.5s ease-out; }
+@keyframes sf-shake { 0% { transform: translate(3px, -2px); } 25% { transform: translate(-3px, 1px); } 50% { transform: translate(2px, 0); } 100% { transform: none; } }
+
+/* The strike button sits in the sky, above the targets it hits. It is monospace
+   and a fixed width so it never moves as the numbers change; the key hint and
+   the Automatic tag hang off its right side. */
+.sf-strikebar { position: absolute; left: 50%; top: 3.5%; transform: translateX(-50%); z-index: 2; }
+.sf-strikebar .row { position: relative; display: block; margin: 0; }
+.sf .sf-strikebar .act.primary:not(:disabled), .sf-strikebar .act { display: block; width: 36ch; text-align: center; background: #f0c85a; color: #141a33; border: 0; border-radius: 0; box-shadow: 4px 4px 0 #0a0e20; font: 15px/1.2 Consolas, 'Lucida Console', 'Courier New', monospace; letter-spacing: 0; text-transform: none; padding: 12px 0; white-space: nowrap; overflow: hidden; transition: transform 0.1s, box-shadow 0.1s; }
+.sf .sf-strikebar .act.primary:hover:not(:disabled) { background: #ffd96b; border: 0; transform: translate(2px, 2px); box-shadow: 2px 2px 0 #0a0e20; }
+.sf-strikebar .act:disabled { opacity: 0.5; box-shadow: none; }
+.sf-strikebar kbd { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin-left: 16px; background: #232d55; color: #e8eefc; border: 0; border-radius: 0; font: 12px Consolas, 'Lucida Console', 'Courier New', monospace; }
+.sf-strikebar .sf-tag { position: absolute; left: calc(100% + 52px); top: 50%; transform: translateY(-50%); color: #e8eefc; font: 13px Consolas, 'Lucida Console', 'Courier New', monospace; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-scene * { animation: none !important; }
+}

@@ -1,0 +1,147 @@
+
+/* Hollow: a crystal cave. Cave black, deep violet, quartz, geode pink.
+   The scene is the Layers style (flat cut-paper shapes). Everything outside
+   it is the plain minimal look: monospace text on the page, outlines only on
+   what you click or reach, tiles lit from the middle when they count. */
+
+#app:has(section.ho:not([hidden])) { max-width: 1680px; padding: 0 28px 60px; }
+html:has(section.ho:not([hidden])), html:has(section.ho:not([hidden])) body { background: transparent; }
+html:has(section.ho:not([hidden])) { background: #07050c; }
+
+@font-face { font-family: 'Josefin'; src: url(../../fonts/josefin-sans-latin-400-normal.woff2) format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Josefin'; src: url(../../fonts/josefin-sans-latin-600-normal.woff2) format('woff2'); font-weight: 600; font-display: swap; }
+
+.ho {
+  --ink: #ece4f6;
+  --dim: #9a8bb4;
+  --line: #35284d;
+  --acc: #b28cf0;
+  --acc2: #e5d6ff;
+  --btn: #130c20;
+  --btn-line: #6a4aa0;
+  --btn-hover: #1d1230;
+  --btn-on: #2e1a52;
+  --glow: rgba(178, 140, 240, 0.3);
+  --tile: #0c0814;
+  --tile-line: #d8c8f0;
+  --lit: #6a38b8;
+  --main: #b28cf0;
+  --main-ink: #0d0618;
+  --main-hover: #c6a6f6;
+  --accent: var(--acc);
+  position: relative; color: var(--ink); text-align: center;
+  font-family: Consolas, 'Lucida Console', 'Courier New', monospace; font-variant-numeric: tabular-nums;
+}
+
+/* --- Top strip --------------------------------------------------------------- */
+.ho-strip { display: flex; justify-content: center; flex-wrap: wrap; gap: 20px 60px; padding: 18px 0 6px; }
+.ho-stat b { display: block; font-size: 26px; font-weight: 400; line-height: 1.15; color: var(--acc); }
+.ho-stat span { font-size: 13px; color: var(--dim); }
+.ho-speed { position: absolute; right: 0; top: 6px; font-size: 12px; color: var(--dim); }
+
+.ho .subtabs { display: flex; justify-content: center; gap: 6px; margin: 10px 0 18px; border: 0; background: none; }
+.ho .subtabs button { background: var(--btn); border: 1px solid var(--btn-line); border-radius: 0; color: var(--ink); font: inherit; padding: 5px 16px; cursor: pointer; }
+.ho .subtabs button.on { background: var(--btn-on); border-color: var(--acc); color: #fff; }
+.ho .subtabs button.fresh { border-color: var(--acc2); }
+
+/* --- Text straight on the page ----------------------------------------------- */
+.ho .box, .ho .notice { background: none; border: 0; border-radius: 0; padding: 0; margin: 0 0 26px; }
+.ho .panel > .box { margin-top: 20px; }
+.ho h3 { display: block; margin: 0 0 8px; font-size: 16px; font-weight: 400; color: var(--acc); text-transform: none; letter-spacing: 0; }
+.ho .notice h3 { color: #fff; }
+.ho h3 .count { color: var(--ink); margin-left: 8px; }
+.ho p.desc, .ho p.note, .ho p.lead { color: var(--dim); margin: 4px auto; font-size: 13px; max-width: 620px; }
+.ho .row { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 14px; }
+.ho .figure { font-size: 34px; font-weight: 400; color: var(--accent); margin-top: 6px; }
+.ho .figure small { font-size: 14px; color: var(--dim); margin-left: 8px; }
+.ho kbd { border-radius: 0; background: transparent; border: 1px solid var(--line); color: var(--dim); }
+
+.ho .act { border-radius: 0; clip-path: none; background: var(--btn); color: var(--ink); border: 1px solid var(--btn-line); box-shadow: none; font: inherit; padding: 7px 14px; }
+.ho .act:hover:not(:disabled) { background: var(--btn-hover); }
+.ho .act.primary:not(:disabled) { background: var(--btn-on); border-color: var(--acc); color: #fff; box-shadow: 0 0 12px var(--glow); }
+.ho .act:disabled { opacity: 0.4; }
+.ho .auto { color: var(--acc); font-size: 13px; margin: 0; }
+.ho select { background: var(--btn); color: var(--ink); border: 1px solid var(--btn-line); border-radius: 0; font: inherit; padding: 5px 8px; }
+
+.ho-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 60px; max-width: 1300px; margin: 0 auto; }
+.ho-col { min-width: 0; }
+@media (max-width: 900px) { .ho-layout { grid-template-columns: 1fr; } }
+
+.ho .box.feed { display: flex; align-items: center; justify-content: space-between; gap: 24px; text-align: left; margin: 0 auto; max-width: 640px; padding: 6px 0; }
+.ho .feed .feed-main { flex: 1; min-width: 0; }
+.ho .feed-buy { display: flex; gap: 6px; align-items: center; justify-content: flex-end; min-width: 150px; }
+.ho .feed h3 { margin: 0; color: var(--ink); }
+.ho .feed p.desc { margin: 2px 0 0; max-width: none; }
+
+.ho table.breakdown { max-width: 360px; margin: 0 auto; text-align: left; font-size: 13px; width: 100%; }
+.ho table.breakdown td { padding: 3px 0; color: var(--dim); }
+.ho table.breakdown td:last-child { text-align: right; color: var(--ink); }
+.ho table.breakdown tr.total td { border-top: 1px solid var(--line); color: #fff; padding-top: 6px; }
+
+.ho .dial { max-width: 420px; margin: 8px auto; }
+.ho .dial input[type=range] { accent-color: var(--acc); max-width: 100%; width: 100%; }
+.ho .meter { max-width: 420px; margin: 8px auto; }
+.ho .meter .bar { height: 10px; border: 1px solid var(--btn-line); background: none; border-radius: 0; overflow: hidden; }
+.ho .meter .fill { background: var(--acc); border-radius: 0; }
+.ho .meter .label { font-size: 12px; color: var(--dim); margin-top: 4px; }
+
+/* --- Tiles: plain squares, lit from the middle when they count ---------------- */
+.ho ul.points, .ho .grid, .ho-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 1150px; margin: 14px auto 0; padding: 0; list-style: none; }
+.ho ul.points li, .ho-tile, .ho .upgrade {
+  width: 200px; min-height: 150px; border: 1px solid var(--tile-line); border-radius: 0; background: var(--tile); color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 8px 10px; font: inherit; font-size: 13px; text-align: center; box-shadow: none;
+}
+.ho ul.points .deg, .ho-tile .at { width: auto; font-size: 12px; font-weight: 400; color: var(--dim); text-align: center; }
+.ho ul.points .what { display: flex; flex-direction: column; gap: 4px; }
+.ho ul.points .what b { font-size: 14px; font-weight: 400; color: var(--acc); font-style: normal; }
+.ho ul.points .what p { margin: 0; font-size: 12px; color: var(--ink); }
+.ho ul.points li.lit, .ho-tile.lit { background: radial-gradient(circle, var(--lit) 0%, var(--tile) 85%); color: #fff; }
+.ho ul.points li.lit .what b { color: #fff; }
+.ho ul.points li.lit .deg, .ho-tile.lit .at { color: var(--acc2); }
+.ho ul.points li.unknown { border-color: var(--line); }
+.ho ul.points li.unknown .what { font-style: normal; color: var(--dim); }
+.ho-tile .text { font-size: 12px; }
+
+.ho .upgrade .name { font-size: 14px; font-weight: 400; color: var(--accent); }
+.ho .upgrade .text, .ho .upgrade .need { font-size: 12px; color: var(--ink); }
+.ho .upgrade .need.unmet { color: #d48a6a; }
+.ho .upgrade .cost { margin-top: auto; font-size: 12px; color: var(--accent); }
+.ho .upgrade.can { border-color: var(--accent); cursor: pointer; }
+.ho .upgrade.can:hover { background: var(--btn-hover); }
+.ho .upgrade.cant { opacity: 0.5; }
+.ho .upgrade.owned { border-color: var(--accent); background: radial-gradient(circle, var(--deep, var(--lit)) 0%, var(--tile) 85%); }
+.ho .upgrade.owned .name { color: #fff; }
+
+/* --- The scene frame and its main control -------------------------------------- */
+.ho-scene { position: relative; width: min(100vw, 1600px); margin: 6px 0 14px 50%; transform: translateX(-50%); aspect-ratio: 1600 / 420; text-align: left; }
+.ho-scene > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: hidden; }
+.ho-scene .r { font: 400 13px 'Josefin', sans-serif; letter-spacing: 0.08em; fill: var(--dim); }
+.ho-scene .w { font: 600 13px 'Josefin', sans-serif; letter-spacing: 0.08em; fill: #fff; }
+.ho-scene .dark { fill: #030207; }
+.ho-scene .rim { filter: drop-shadow(-2px 0 0 #6a4aa0); }
+
+.ho-bar { position: absolute; left: 50%; bottom: 4%; transform: translateX(-50%); z-index: 2; }
+.ho-bar .row { position: relative; display: block; margin: 0; }
+.ho .ho-bar .act.primary:not(:disabled), .ho .ho-bar .act { display: block; width: 34ch; text-align: center; background: var(--main); color: var(--main-ink); border: 0; border-radius: 0; box-shadow: 4px 4px 0 #030207; font: 15px/1.2 Consolas, 'Lucida Console', 'Courier New', monospace; padding: 12px 0; white-space: nowrap; overflow: hidden; transition: transform 0.1s, box-shadow 0.1s; }
+.ho .ho-bar .act.primary:hover:not(:disabled) { background: var(--main-hover); border: 0; transform: translate(2px, 2px); box-shadow: 2px 2px 0 #030207; }
+.ho .ho-bar .act:disabled { opacity: 0.55; box-shadow: none; background: var(--btn); color: var(--ink); }
+.ho-bar kbd { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin-left: 16px; background: var(--btn); color: var(--ink); border: 0; font: 12px Consolas, monospace; }
+@media (prefers-reduced-motion: reduce) { .ho-scene * { animation: none !important; transition: none !important; } }
+
+.ho .geode-accent { --accent: #e39ab5; --deep: #7a3550; }
+.ho-scene .rim { filter: drop-shadow(0 2px 0 #5b3f8a); }
+.ho-scene .tick rect { fill: #4a3868; }
+.ho-scene .tick.lit rect { fill: #b28cf0; }
+.ho-scene .tick.lit .r { fill: #e5d6ff; }
+
+/* The lattice: tiles in rows, joined by lines that light up when owned. */
+.ho .lattice-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin: 0 auto 30px; }
+.ho .lattice-row.core { margin-bottom: 14px; }
+.ho .lattice-row .upgrade { position: relative; min-height: 120px; }
+.ho .lattice-row.link .upgrade::after { content: ''; position: absolute; left: 50%; top: 100%; width: 2px; height: 30px; margin-left: -1px; background: var(--line); }
+.ho .lattice-row.link .upgrade.owned::after { background: var(--accent); }
+.ho .lattice-row.bridges .upgrade { border-style: dashed; }
+
+/* Slow, looping motion only. */
+.ho-scene .gl { animation: ho-glint 7s ease-in-out infinite; opacity: 0; }
+@keyframes ho-glint { 0%, 100% { opacity: 0; } 50% { opacity: 0.9; } }
