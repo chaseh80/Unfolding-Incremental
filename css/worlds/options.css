@@ -153,3 +153,13 @@ html:has(section.op:not([hidden])) { background: #0b0b0b; }
 .op .op-tile span { font-size: 12px; color: var(--dim); }
 .op .op-keys { display: grid; grid-template-columns: max-content max-content; justify-content: center; align-items: center; gap: 8px 14px; margin-top: 10px; text-align: left; font-size: 13px; color: var(--dim); }
 .op .op-keys kbd { justify-self: end; }
+
+/* Splits: a plain table, reached milestones in white, the next one dim. */
+.op table.op-splits { margin: 12px auto 0; border-collapse: collapse; font-size: 13px; text-align: left; }
+.op .op-splits th { font-weight: 400; color: var(--dim); padding: 0 14px 6px; text-align: right; }
+.op .op-splits td { padding: 3px 14px; color: #fff; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.op .op-splits td.what { text-align: left; color: var(--ink); }
+.op .op-splits tr + tr td { border-top: 1px solid var(--line); }
+.op .op-splits tr.next td { color: var(--dim); }
+.op .op-splits td.delta { color: #e08a8a; }
+.op .op-splits td.delta.ahead { color: #8fcf7a; }

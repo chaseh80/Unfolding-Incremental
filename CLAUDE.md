@@ -68,7 +68,8 @@ Short, plain, effect first. Names may carry flavour; descriptions never do. No c
 - Saves: `mergeSave(defaults, loaded)` walks the defaults, so adding a field to `defaults()` is safe for old saves. An empty object in defaults is an open-ended set. Arrays are copied whole.
 - Pages are built once in `src/ui/*-view.js` with `h()` and updated with `setText`, `setShown`, `setClass`, `setDisabled`. Each view returns `{ el, update, key }` and is listed in `src/ui/app.js`.
 - Events: logic calls `emit(type, data)`; the page and the simulator `drain()` them.
-- Bump the version label in `src/ui/app.js` with each slice (now v0.15).
+- Bump the version label in `src/ui/app.js` with each slice (now v0.16).
+- Splits (`src/splits.js`, shown on the Options page): the time each milestone was first reached, checked once a second from `game.tick`, for the whole game and for each Nova. Chase pastes them with Copy splits; they are the real player's pacing to set against the simulator's.
 
 ## Testing in the browser
 

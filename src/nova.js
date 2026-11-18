@@ -14,6 +14,7 @@ import { emit } from './core/events.js';
 import * as eclipse from './eclipse.js';
 import * as observatory from './observatory.js';
 import { NODES, NODE } from './sky.js';
+import { newRun } from './splits.js';
 
 export const BAL = {
   opensAt: 30, // stars charted
@@ -228,6 +229,7 @@ export function nova(state, fresh) {
   emit('nova', { count: n.count, gain: got, time: n.time, stars: observatory.totalStars(state) });
   n.time = 0;
   n.corona48 = '';
+  newRun(state);
   if (n.respec) {
     n.dust = n.dust.add(n.treeSpent);
     n.treeSpent = D(0);
@@ -235,7 +237,7 @@ export function nova(state, fresh) {
     n.respec = false;
   }
   const lenses = n.up.lenses ? { ...state.observatory.lens } : null;
-  const keep = new Set(['version', 'started', 'lastSeen', 'playtime', 'options', 'ui', 'nova']);
+  const keep = new Set(['version', 'started', 'lastSeen', 'playtime', 'options', 'ui', 'nova', 'splits']);
   for (const key of Object.keys(fresh)) if (!keep.has(key)) state[key] = fresh[key];
   if (lenses) state.observatory.lens = lenses;
   state.ui.tab = 'cinder';

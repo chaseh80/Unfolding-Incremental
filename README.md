@@ -49,6 +49,8 @@ Above Eclipse is **Nova** (a first prototype; its numbers are guesses, not tuned
 
 The first Nova and the run after it have not been measured.
 
+The Options page keeps **splits**: the time played when each milestone was first reached (first burn, each world opening, its first reset and first shine, the Eclipse purchases and expansions, star counts, the first Nova), and after a Nova the same list for the current run set against the last one. Copy splits puts them on the clipboard as text. Milestones a save had reached before splits existed show as "before splits".
+
 A world an Eclipse upgrade makes run faster shows its rates as they pass in real time, with the speed beside them. Clocks on its page (time since a reset, a held strike, tide length) are the world's own and run that much faster.
 
 ## Playing it

@@ -138,7 +138,7 @@ document.getElementById('app').append(
   h('header', { class: 'top' },
     h('h1', {}, 'Manifold'),
     h('nav', { class: 'tabs' }, views.map((v) => v.btn)),
-    h('span', { class: 'version' }, 'v0.15')),
+    h('span', { class: 'version' }, 'v0.16')),
   ...views.map((v) => v.view.el));
 
 function currentView() {
