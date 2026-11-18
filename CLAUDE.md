@@ -69,7 +69,7 @@ Short, plain, effect first. Names may carry flavour; descriptions never do. No c
 - Pages are built once in `src/ui/*-view.js` with `h()` and updated with `setText`, `setShown`, `setClass`, `setDisabled`. Each view returns `{ el, update, key }` and is listed in `src/ui/app.js`.
 - Events: logic calls `emit(type, data)`; the page and the simulator `drain()` them.
 - Bump the version label in `src/ui/app.js` with each slice (now v0.16).
-- Splits (`src/splits.js`, shown on the Options page): the time each milestone was first reached, checked once a second from `game.tick`, for the whole game and for each Nova. Chase pastes them with Copy splits; they are the real player's pacing to set against the simulator's.
+- Splits (`src/splits.js`, shown on the Options page): the time each milestone was first reached, checked once a second from `game.tick`, for the whole game and for each Nova. Chase pastes them with Copy splits, along with notes he writes with N (`state.splits.notes`); they are the real player's pacing to set against the simulator's.
 
 ## Testing in the browser
 

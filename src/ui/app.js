@@ -4,7 +4,8 @@ import { newState, loadState, tick, catchUp, goNova } from '../game.js';
 import { drain } from '../core/events.js';
 import { serialize, fromExportString } from '../core/save.js';
 import { formatTime } from '../core/num.js';
-import { h, setClass, setShown, toast } from './dom.js';
+import { h, setClass, setShown, toast, textBox } from './dom.js';
+import { addNote } from '../splits.js';
 import { buildCinder } from './cinder-view.js';
 import { buildTidewater } from './tidewater-view.js';
 import { buildGrove } from './grove-view.js';
@@ -194,8 +195,20 @@ document.addEventListener('keydown', (e) => {
   const tag = e.target && e.target.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA') return;
   if (document.querySelector('.modal-back')) return;
+  if (e.key.toLowerCase() === 'n') { e.preventDefault(); openNote(); return; }
   currentView().view.key(e.key.toLowerCase());
 });
+
+/** N anywhere: a note for the splits, timed to now. */
+game.note = openNote;
+function openNote() {
+  textBox({
+    title: 'Note',
+    body: `Saved with the splits at ${formatTime(game.state.playtime)} played.`,
+    placeholder: 'What happened, what you thought.',
+    onYes: (text) => { if (addNote(game.state, text)) toast('Note saved.'); },
+  });
+}
 
 setInterval(frame, 50);
 setInterval(() => game.save(), 10000);

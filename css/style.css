@@ -331,3 +331,9 @@ section[data-world] .modal h3 { color: var(--m); font-size: 16px; font-weight: 4
 section[data-world] .modal p { color: var(--dim); font-size: 13px; margin: 0 0 18px; max-width: none; }
 section[data-world] .modal .row { display: flex; justify-content: flex-end; gap: 10px; margin: 0; }
 section.sf .modal { --m: var(--bolt); }
+.modal textarea.note-field {
+  display: block; width: min(436px, 80vw); box-sizing: border-box; margin: 0 0 16px; resize: vertical;
+  background: #050505; color: var(--ink, #ddd); border: 1px solid color-mix(in srgb, var(--m, #888) 55%, #000); border-radius: 0;
+  padding: 8px 10px; font: 13px/1.4 Consolas, 'Lucida Console', 'Courier New', monospace;
+}
+.modal textarea.note-field:focus { outline: none; border-color: var(--m, #ccc); }

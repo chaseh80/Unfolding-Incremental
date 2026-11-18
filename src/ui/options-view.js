@@ -2,7 +2,7 @@
 import { h, setText, setShown, setClass, toast, confirmBox } from './dom.js';
 import { formatInt, formatTemp, formatTime } from '../core/num.js';
 import { toExportString, fromExportString } from '../core/save.js';
-import { SPLITS, asText } from '../splits.js';
+import { SPLITS, asText, removeNote } from '../splits.js';
 
 export function buildOptions(game) {
   const saveArea = h('textarea', { class: 'save', spellcheck: 'false', placeholder: 'Paste a save here, then press Import.' });
@@ -56,7 +56,8 @@ export function buildOptions(game) {
     h('div', { class: 'op-keys' },
       h('kbd', {}, 'M'), h('span', {}, 'Buys everything in the current world.'),
       h('kbd', {}, 'B'), h('span', {}, "Does the current world's first reset."),
-      h('kbd', {}, 'S'), h('span', {}, 'Strikes in Stormfront.')));
+      h('kbd', {}, 'S'), h('span', {}, 'Strikes in Stormfront.'),
+      h('kbd', {}, 'N'), h('span', {}, 'Writes a note into the splits, from any tab.')));
 
   const STATS = [
     ['Time played', (s) => formatTime(s.playtime)],
@@ -111,12 +112,25 @@ export function buildOptions(game) {
       }
     },
   }, 'Copy splits');
+  // Notes the player writes with N, listed under the splits at the time they were written.
+  const noteList = h('ol', { class: 'op-notes' });
+  let notesShown = -1;
+  function drawNotes(notes) {
+    noteList.replaceChildren(...notes.map((n, i) => h('li', {},
+      h('span', { class: 'when' }, formatTime(n.t)),
+      h('span', { class: 'after' }, `after ${n.after}${n.nova ? `, Nova ${n.nova}` : ''}`),
+      h('span', { class: 'text' }, n.text),
+      h('button', { class: 'del', title: 'Delete this note', onclick: () => { removeNote(game.state, i); notesShown = -1; } }, '×'))));
+    setShown(noteList, notes.length > 0);
+  }
   const splitsBox = h('div', { class: 'box' },
     h('h3', {}, 'Splits'),
     h('table', { class: 'op-splits' },
       h('thead', {}, h('tr', {}, h('th', {}, ''), h('th', {}, 'First reached'), runHead, lastHead, diffHead)),
       h('tbody', {}, rows.map((r) => r.tr))),
-    h('div', { class: 'row' }, copySplits));
+    noteList,
+    h('div', { class: 'row' }, h('button', { class: 'act', onclick: () => game.note() }, 'Add note'), copySplits),
+    h('p', { class: 'note' }, 'Press N on any tab to add a note. Notes are copied with the splits.'));
 
   const resetBox = h('div', { class: 'box' },
     h('h3', {}, 'Wipe save'),
@@ -162,6 +176,7 @@ export function buildOptions(game) {
         setClass(r.delta, 'ahead', d.startsWith('−'));
       }
     }
+    if (log.notes.length !== notesShown) { notesShown = log.notes.length; drawNotes(log.notes); }
 
     for (const x of STATS) {
       const v = x.get(s);

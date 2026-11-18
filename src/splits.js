@@ -64,7 +64,32 @@ export function defaults() {
     last: {}, // the previous Nova's `run`
     began: false, // whether a first check has been made on this save
     wait: 0,
+    notes: [], // the player's own notes: { t: seconds played, after: last milestone reached, text }
   };
+}
+
+/** The milestone reached most recently, to place a note. */
+function lastReached(state) {
+  const log = state.splits;
+  let best = null;
+  let bestT = -Infinity;
+  for (const sp of SPLITS) {
+    const t = log.first[sp.id];
+    if (t === undefined) continue;
+    if (t >= bestT) { best = sp; bestT = t; }
+  }
+  return best ? best.label : 'the start';
+}
+
+export function addNote(state, text) {
+  const clean = String(text || '').trim().slice(0, 500);
+  if (!clean) return false;
+  state.splits.notes.push({ t: state.playtime, nova: state.nova.count, after: lastReached(state), text: clean });
+  return true;
+}
+
+export function removeNote(state, i) {
+  state.splits.notes.splice(i, 1);
 }
 
 /** Seconds into the current Nova (the whole game before the first). */
@@ -113,6 +138,10 @@ export function asText(state, fmt) {
     if (state.nova.count > 0 && !sp.once) row.push(show(log.run[sp.id]));
     if (state.nova.count > 1 && !sp.once) row.push(show(log.last[sp.id]));
     lines.push(row.join(' | '));
+  }
+  if (log.notes.length) {
+    lines.push('', 'Notes');
+    for (const n of log.notes) lines.push(`${fmt(n.t)} (after ${n.after}${n.nova ? `, Nova ${n.nova}` : ''}): ${n.text}`);
   }
   return lines.join('\n');
 }

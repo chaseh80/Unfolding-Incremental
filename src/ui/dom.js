@@ -73,3 +73,25 @@ export function confirmBox({ title, body, yes, no = 'Cancel', danger = false, on
   root.append(back);
   yesBtn.focus();
 }
+
+/** A small box to type a line into, over whatever tab is showing. Enter saves, Escape closes. */
+export function textBox({ title, body = '', placeholder = '', yes = 'Save', onYes }) {
+  const root = document.querySelector('section[data-world]:not([hidden])') || document.getElementById('modal-root');
+  const close = () => back.remove();
+  const save = () => { const v = field.value; close(); onYes(v); };
+  const field = h('textarea', {
+    class: 'note-field', rows: '3', placeholder, spellcheck: 'true',
+    onkeydown: (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); save(); }
+      else if (e.key === 'Escape') { e.preventDefault(); close(); }
+    },
+  });
+  const back = h('div', { class: 'modal-back', onclick: (e) => { if (e.target === back) close(); } },
+    h('div', { class: 'modal', role: 'dialog' },
+      h('h3', {}, title),
+      body ? h('p', {}, body) : null,
+      field,
+      h('div', { class: 'row' }, h('button', { class: 'act', onclick: close }, 'Cancel'), h('button', { class: 'act primary', onclick: save }, yes))));
+  root.append(back);
+  field.focus();
+}
