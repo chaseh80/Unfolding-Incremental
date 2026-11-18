@@ -1,7 +1,7 @@
 // Everything you see while looking at Cinder.
 import { h, setText, setShown, setClass, setDisabled, confirmBox } from './dom.js';
 import { Decimal, format, formatInt, formatMult, formatTemp, formatTime } from '../core/num.js';
-import { upgradeGrid, feedRow, subTabs, pointList, resetBox, breakdown, shineStat, dial, real } from './parts.js';
+import { upgradeGrid, feedRow, subTabs, pointList, resetBox, breakdown, shineStat, dial, real, speedLabel } from './parts.js';
 import * as cinder from '../worlds/cinder.js';
 import { paceMult } from '../worlds/links.js';
 
@@ -65,7 +65,7 @@ export function buildCinder(game) {
     setText(rate, c.lit ? heat(real(d.rate, pace())) : '0');
     setText(tempLine, c.lit ? formatTemp(d.temp) : '-');
     setShown(speedText, pace() > 1);
-    setText(speedText, `Gamespeed: ${whole(pace())}×`);
+    setText(speedText, speedLabel(pace()));
   }
 
   // --- The forge ---------------------------------------------------------

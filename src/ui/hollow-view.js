@@ -1,7 +1,7 @@
 // Everything you see while looking at Hollow.
 import { h, setText, setShown, setClass, setDisabled, confirmBox } from './dom.js';
 import { format, formatInt, formatMult, formatTime } from '../core/num.js';
-import { upgradeGrid, subTabs, pointList, resetBox, breakdown, shineStat, real } from './parts.js';
+import { upgradeGrid, subTabs, pointList, resetBox, breakdown, shineStat, real, speedLabel } from './parts.js';
 import { f0, attr, showSvg, dec, rng, makeScene, mainBar } from './scene.js';
 import * as hollow from '../worlds/hollow.js';
 import { paceMult } from '../worlds/links.js';
@@ -57,7 +57,7 @@ export function buildHollow(game) {
     setText(rate, c.open ? amount(real(d.rate, pace())) : '0');
     setText(facetStat, c.open ? `${d.unspent} / ${d.facets}` : '-');
     setShown(speedText, pace() > 1);
-    setText(speedText, `Gamespeed: ${whole(pace())}×`);
+    setText(speedText, speedLabel(pace()));
   }
 
   // --- The cave ----------------------------------------------------------

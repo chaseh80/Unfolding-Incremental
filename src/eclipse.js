@@ -259,7 +259,7 @@ export function refresh(state) {
 
 /** How many charges the Observatory has given. */
 export function charges(state) {
-  return observatory.reached(state, 'charge');
+  return observatory.reached(state, 'charge') + (state.nova && state.nova.up.charge ? 1 : 0);
 }
 
 export function planned(e) {
@@ -412,6 +412,7 @@ export function eclipse(state) {
   for (const id of ALL) e.depth[id] = 0;
   a.starlight = D(0);
   a.total = D(0);
+  a.clear = 0;
   a.seen = true;
   return true;
 }

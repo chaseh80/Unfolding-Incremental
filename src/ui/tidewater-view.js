@@ -1,7 +1,7 @@
 // Everything you see while looking at Tidewater.
 import { h, setText, setShown, setClass, confirmBox } from './dom.js';
 import { Decimal, format, formatInt, formatMult } from '../core/num.js';
-import { upgradeGrid, feedRow, subTabs, pointList, resetBox, breakdown, shineStat, dial, real } from './parts.js';
+import { upgradeGrid, feedRow, subTabs, pointList, resetBox, breakdown, shineStat, dial, real, speedLabel } from './parts.js';
 import { REDUCED, f0, attr, showSvg, dec, rng, makeScene, mainBar } from './scene.js';
 import * as tw from '../worlds/tidewater.js';
 import { paceMult } from '../worlds/links.js';
@@ -51,7 +51,7 @@ export function buildTidewater(game) {
     else if (pace() / t.period > 0.6) setText(tideLine, `${format(pace() / t.period, 1)} a second`);
     else setText(tideLine, t.phase < d.high ? `In ${secs(d.high - t.phase)}` : `Out ${secs(t.period - t.phase)}`);
     setShown(speedText, pace() > 1);
-    setText(speedText, `Gamespeed: ${whole(pace())}×`);
+    setText(speedText, speedLabel(pace()));
   }
 
   // --- The shore ---------------------------------------------------------

@@ -5,6 +5,7 @@ import { h, setText, setShown, setClass, setDisabled, confirmBox } from './dom.j
 import { format, formatDown, formatInt, formatTemp } from '../core/num.js';
 import * as atlas from '../atlas.js';
 import * as ecl from '../eclipse.js';
+import * as nova from '../nova.js';
 import { paceMult } from '../worlds/links.js';
 import { real, subTabs } from './parts.js';
 import { showSvg, rng, makeScene, WORLD_COLOUR as COLOUR } from './scene.js';
@@ -157,7 +158,14 @@ export function buildAtlas(game) {
   // Nothing is flagged as new here: the page forgets what you have seen on reload.
   const visited = Object.fromEntries(['main', ...WORLDS.map((w) => w.id)].map((id) => ['tab_' + id, true]));
   const general = groups.filter((g) => !COLOUR[g.g.id]);
-  const mainPanel = h('div', { class: 'panel' }, scene, autoBox, rulesBox, general.map((g) => g.el));
+  // Clear skies, opened by a stardust upgrade: starlight spent again and again.
+  const clearText = h('span', { class: 'text' });
+  const clearCost = h('span', { class: 'cost' });
+  const clearCard = h('button', { class: 'upgrade', onclick: () => nova.buyClear(S()) },
+    h('span', { class: 'name' }, 'Clear skies'), clearText, clearCost);
+  const clearGroup = h('div', { class: 'group' }, h('h3', {}, 'Again and again'), h('div', { class: 'grid' }, clearCard));
+
+  const mainPanel = h('div', { class: 'panel' }, scene, autoBox, rulesBox, general.map((g) => g.el), clearGroup);
   const worldTabs = WORLDS.map((world) => {
     const group = groups.find((g) => g.g.id === world.id);
     return { id: world.id, label: world.name, world, group, panel: h('div', { class: 'panel' }, h('p', { class: 'desc' }, world.rule), group.el) };
@@ -232,6 +240,16 @@ export function buildAtlas(game) {
       }
       setShown(g.el, any);
       g.any = any;
+    }
+
+    const clear = nova.clearOpen(s);
+    setShown(clearGroup, clear);
+    if (clear) {
+      const cost = nova.clearCost(s);
+      setText(clearText, `Sightings ×${nova.BAL.clearMult} for each level. Level ${a.clear || 0}. Lost at an Eclipse.`);
+      setText(clearCost, `${whole(cost)} starlight`);
+      setClass(clearCard, 'can', a.starlight.gte(cost));
+      setClass(clearCard, 'cant', a.starlight.lt(cost));
     }
 
     tabs.update((t) => t.id === 'main' || (t.world.open(s) && t.group.any));

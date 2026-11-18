@@ -181,3 +181,50 @@ html:has(section.ob:not([hidden])) { background: #060813; }
 }
 .ob .ob-col .act.primary:hover:not(:disabled) { background: var(--c); filter: brightness(1.15); border: 0; transform: translate(2px, 2px); box-shadow: 2px 2px 0 #03040a; }
 .ob .ob-col .act:disabled { background: var(--btn); color: var(--dim); box-shadow: none; opacity: 0.8; }
+
+/* --- The sky above: Nova's tree (src/ui/sky-view.js) ----------------------------
+   Full width, directly above the constellations, darkest at the top. Before the
+   first Nova every node is faint and out of reach; only the star at the top is
+   bright. After it, nodes in reach brighten, ones you can afford glow, and
+   taken ones burn pale gold with their links lit. */
+.ob-sky { margin: 0; }
+.ob-tree { position: relative; width: min(100vw, 1600px); margin: 6px 0 -6px 50%; transform: translateX(-50%); aspect-ratio: 1600 / 700; background: linear-gradient(180deg, #010106 0%, #04050e 55%, #060813 100%); }
+.ob-tree > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.ob-tree .sky { fill: transparent; }
+.ob-tree .far { fill: #2a2f48; }
+.ob-tree .thread { stroke: #1c2240; stroke-width: 1; stroke-dasharray: 2 6; }
+.ob-tree .top-halo { fill: #fff6c8; opacity: 0.12; }
+.ob-tree .top-spike { fill: #fff6c8; opacity: 0.85; }
+.ob-tree .top-dot { fill: #ffffff; }
+.ob-tree .link { stroke: #1e2440; stroke-width: 1.2; stroke-dasharray: 3 5; }
+.ob-tree .node .hit { fill: transparent; }
+.ob-tree .node .dot { fill: #2c3250; }
+.ob-tree .node .spike { fill: #2c3250; opacity: 0.7; }
+.ob-tree .node .ring { fill: none; stroke: #2c3250; stroke-width: 1.2; }
+.ob-tree .node .ring.edge { stroke-dasharray: 3 3; }
+.ob-tree .node .halo { fill: #fff6c8; opacity: 0; }
+
+.ob-tree.live .far { fill: #343a58; }
+.ob-tree.live .link { stroke: #2c3458; }
+.ob-tree.live .node .dot, .ob-tree.live .node .spike { fill: #4a5274; }
+.ob-tree.live .node .ring { stroke: #4a5274; }
+.ob-tree.live .node.open .dot, .ob-tree.live .node.open .spike { fill: #a8a6c4; }
+.ob-tree.live .node.open .ring { stroke: #a8a6c4; }
+.ob-tree.live .node.can { cursor: pointer; }
+.ob-tree.live .node.can .halo { opacity: 0.16; }
+.ob-tree.live .node.can:hover .halo { opacity: 0.32; }
+.ob-tree.live .node.owned .dot, .ob-tree.live .node.owned .spike { fill: #f2e3a0; }
+.ob-tree.live .node.owned .ring { stroke: #f2e3a0; }
+.ob-tree.live .node.owned .halo { opacity: 0.22; }
+.ob-tree.live .link.lit { stroke: #f2e3a0; stroke-dasharray: none; stroke-width: 2; opacity: 0.8; }
+.ob-tree.live .node:hover .dot { fill: #ffffff; }
+
+.ob-treeinfo { display: flex; justify-content: center; align-items: baseline; gap: 14px; min-height: 22px; margin: 4px auto 0; font-size: 13px; color: var(--ink); }
+.ob-treeinfo b { font-weight: 400; color: var(--acc); }
+.ob-treeinfo .cost { color: var(--acc2); }
+.ob .ob-sky .row { margin: 8px 0 4px; }
+/* The info line and the refund switch sit over the sky's top corners, so
+   nothing comes between the sky and the constellations under it. */
+.ob-sky { position: relative; }
+.ob-sky .ob-treeinfo { position: absolute; left: 0; top: 18px; z-index: 1; flex-direction: column; align-items: flex-start; gap: 3px; max-width: 340px; margin: 0; text-align: left; }
+.ob .ob-sky .row { position: absolute; right: 0; top: 18px; z-index: 1; margin: 0; }

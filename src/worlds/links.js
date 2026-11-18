@@ -30,9 +30,9 @@ export function lightMult(state) {
   return (state.eclipse.light || 1) * (state.grove.ringLight || 1) * (state.clockwork.orreryLight || 1) * (state.hollow.abyssLight || 1) * (state.stormfront.skyLight || 1);
 }
 
-/** How many times faster Eclipse makes a world run. */
+/** How many times faster Eclipse and Nova make a world run. */
 export function paceMult(state, world) {
-  return state.eclipse.pace[world] || 1;
+  return (state.eclipse.pace[world] || 1) * ((state.nova && state.nova.pace) || 1);
 }
 
 /** What a charged Steady hands multiplies every passive reset gain by. */

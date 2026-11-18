@@ -1,0 +1,148 @@
+
+/* Nova: one star going off. Near-black violet, white-hot core, a rose remnant.
+   The scene is the Layers style; everything outside it is the plain minimal look. */
+
+#app:has(section.nv:not([hidden])) { max-width: 1680px; padding: 0 28px 60px; }
+html:has(section.nv:not([hidden])), html:has(section.nv:not([hidden])) body { background: transparent; }
+html:has(section.nv:not([hidden])) { background: #05030a; }
+
+@font-face { font-family: 'Josefin'; src: url(../../fonts/josefin-sans-latin-400-normal.woff2) format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Josefin'; src: url(../../fonts/josefin-sans-latin-600-normal.woff2) format('woff2'); font-weight: 600; font-display: swap; }
+
+.nv {
+  --ink: #ece6f4;
+  --dim: #8e86a6;
+  --line: #2e2840;
+  --acc: #f4ecff;
+  --acc2: #ff9ad5;
+  --btn: #100c18;
+  --btn-line: #6e5a8e;
+  --btn-hover: #1c1528;
+  --btn-on: #2e1f44;
+  --glow: rgba(244, 236, 255, 0.3);
+  --tile: #09070e;
+  --tile-line: #c8bce0;
+  --lit: #5a2a6e;
+  --main: #f4ecff;
+  --main-ink: #14081e;
+  --main-hover: #ffffff;
+  --accent: var(--acc);
+  position: relative; color: var(--ink); text-align: center;
+  font-family: Consolas, 'Lucida Console', 'Courier New', monospace; font-variant-numeric: tabular-nums;
+}
+
+/* --- Top strip --------------------------------------------------------------- */
+.nv-strip { display: flex; justify-content: center; flex-wrap: wrap; gap: 20px 60px; padding: 18px 0 6px; }
+.nv-stat b { display: block; font-size: 26px; font-weight: 400; line-height: 1.15; color: var(--acc); }
+.nv-stat span { font-size: 13px; color: var(--dim); }
+.nv-speed { position: absolute; right: 0; top: 6px; font-size: 12px; color: var(--dim); }
+
+.nv .subtabs { display: flex; justify-content: center; gap: 6px; margin: 10px 0 18px; border: 0; background: none; }
+.nv .subtabs button { background: var(--btn); border: 1px solid var(--btn-line); border-radius: 0; color: var(--ink); font: inherit; padding: 5px 16px; cursor: pointer; }
+.nv .subtabs button.on { background: var(--btn-on); border-color: var(--acc); color: #fff; }
+.nv .subtabs button.fresh { border-color: var(--acc2); }
+
+/* --- Text straight on the page ----------------------------------------------- */
+.nv .box, .nv .notice { background: none; border: 0; border-radius: 0; padding: 0; margin: 0 0 26px; }
+.nv .panel > .box { margin-top: 20px; }
+.nv h3 { display: block; margin: 0 0 8px; font-size: 16px; font-weight: 400; color: var(--acc); text-transform: none; letter-spacing: 0; }
+.nv .notice h3 { color: #fff; }
+.nv h3 .count { color: var(--ink); margin-left: 8px; }
+.nv p.desc, .nv p.note, .nv p.lead { color: var(--dim); margin: 4px auto; font-size: 13px; max-width: 620px; }
+.nv .row { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 14px; }
+.nv .figure { font-size: 34px; font-weight: 400; color: var(--accent); margin-top: 6px; }
+.nv .figure small { font-size: 14px; color: var(--dim); margin-left: 8px; }
+.nv kbd { border-radius: 0; background: transparent; border: 1px solid var(--line); color: var(--dim); }
+
+.nv .act { border-radius: 0; clip-path: none; background: var(--btn); color: var(--ink); border: 1px solid var(--btn-line); box-shadow: none; font: inherit; padding: 7px 14px; }
+.nv .act:hover:not(:disabled) { background: var(--btn-hover); }
+.nv .act.primary:not(:disabled) { background: var(--btn-on); border-color: var(--acc); color: #fff; box-shadow: 0 0 12px var(--glow); }
+.nv .act:disabled { opacity: 0.4; }
+.nv .auto { color: var(--acc); font-size: 13px; margin: 0; }
+.nv select { background: var(--btn); color: var(--ink); border: 1px solid var(--btn-line); border-radius: 0; font: inherit; padding: 5px 8px; }
+
+.nv-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 60px; max-width: 1300px; margin: 0 auto; }
+.nv-col { min-width: 0; }
+@media (max-width: 900px) { .nv-layout { grid-template-columns: 1fr; } }
+
+.nv .box.feed { display: flex; align-items: center; justify-content: space-between; gap: 24px; text-align: left; margin: 0 auto; max-width: 640px; padding: 6px 0; }
+.nv .feed .feed-main { flex: 1; min-width: 0; }
+.nv .feed-buy { display: flex; gap: 6px; align-items: center; justify-content: flex-end; min-width: 150px; }
+.nv .feed h3 { margin: 0; color: var(--ink); }
+.nv .feed p.desc { margin: 2px 0 0; max-width: none; }
+
+.nv table.breakdown { max-width: 360px; margin: 0 auto; text-align: left; font-size: 13px; width: 100%; }
+.nv table.breakdown td { padding: 3px 0; color: var(--dim); }
+.nv table.breakdown td:last-child { text-align: right; color: var(--ink); }
+.nv table.breakdown tr.total td { border-top: 1px solid var(--line); color: #fff; padding-top: 6px; }
+
+.nv .dial { max-width: 420px; margin: 8px auto; }
+.nv .dial input[type=range] { accent-color: var(--acc); max-width: 100%; width: 100%; }
+.nv .meter { max-width: 420px; margin: 8px auto; }
+.nv .meter .bar { height: 10px; border: 1px solid var(--btn-line); background: none; border-radius: 0; overflow: hidden; }
+.nv .meter .fill { background: var(--acc); border-radius: 0; }
+.nv .meter .label { font-size: 12px; color: var(--dim); margin-top: 4px; }
+
+/* --- Tiles: plain squares, lit from the middle when they count ---------------- */
+.nv ul.points, .nv .grid, .nv-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 1150px; margin: 14px auto 0; padding: 0; list-style: none; }
+.nv ul.points li, .nv-tile, .nv .upgrade {
+  width: 200px; min-height: 150px; border: 1px solid var(--tile-line); border-radius: 0; background: var(--tile); color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 8px 10px; font: inherit; font-size: 13px; text-align: center; box-shadow: none;
+}
+.nv ul.points .deg, .nv-tile .at { width: auto; font-size: 12px; font-weight: 400; color: var(--dim); text-align: center; }
+.nv ul.points .what { display: flex; flex-direction: column; gap: 4px; }
+.nv ul.points .what b { font-size: 14px; font-weight: 400; color: var(--acc); font-style: normal; }
+.nv ul.points .what p { margin: 0; font-size: 12px; color: var(--ink); }
+.nv ul.points li.lit, .nv-tile.lit { background: radial-gradient(circle, var(--lit) 0%, var(--tile) 85%); color: #fff; }
+.nv ul.points li.lit .what b { color: #fff; }
+.nv ul.points li.lit .deg, .nv-tile.lit .at { color: var(--acc2); }
+.nv ul.points li.unknown { border-color: var(--line); }
+.nv ul.points li.unknown .what { font-style: normal; color: var(--dim); }
+.nv-tile .text { font-size: 12px; }
+
+.nv .upgrade .name { font-size: 14px; font-weight: 400; color: var(--accent); }
+.nv .upgrade .text, .nv .upgrade .need { font-size: 12px; color: var(--ink); }
+.nv .upgrade .need.unmet { color: #d48a6a; }
+.nv .upgrade .cost { margin-top: auto; font-size: 12px; color: var(--accent); }
+.nv .upgrade.can { border-color: var(--accent); cursor: pointer; }
+.nv .upgrade.can:hover { background: var(--btn-hover); }
+.nv .upgrade.cant { opacity: 0.5; }
+.nv .upgrade.owned { border-color: var(--accent); background: radial-gradient(circle, var(--deep, var(--lit)) 0%, var(--tile) 85%); }
+.nv .upgrade.owned .name { color: #fff; }
+
+/* --- The scene frame and its main control -------------------------------------- */
+.nv-scene { position: relative; width: min(100vw, 1600px); margin: 6px 0 14px 50%; transform: translateX(-50%); aspect-ratio: 1600 / 420; text-align: left; }
+.nv-scene > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: hidden; }
+.nv-scene .r { font: 400 13px 'Josefin', sans-serif; letter-spacing: 0.08em; fill: var(--dim); }
+.nv-scene .w { font: 600 13px 'Josefin', sans-serif; letter-spacing: 0.08em; fill: #fff; }
+.nv-scene .dark { fill: #000000; }
+.nv-scene .rim { filter: drop-shadow(-2px 0 0 #ffd9a8); }
+
+.nv-bar { position: absolute; left: 50%; bottom: 4%; transform: translateX(-50%); z-index: 2; }
+.nv-bar .row { position: relative; display: block; margin: 0; }
+.nv .nv-bar .act.primary:not(:disabled), .nv .nv-bar .act { display: block; width: 34ch; text-align: center; background: var(--main); color: var(--main-ink); border: 0; border-radius: 0; box-shadow: 4px 4px 0 #000000; font: 15px/1.2 Consolas, 'Lucida Console', 'Courier New', monospace; padding: 12px 0; white-space: nowrap; overflow: hidden; transition: transform 0.1s, box-shadow 0.1s; }
+.nv .nv-bar .act.primary:hover:not(:disabled) { background: var(--main-hover); border: 0; transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000000; }
+.nv .nv-bar .act:disabled { opacity: 0.55; box-shadow: none; background: var(--btn); color: var(--ink); }
+.nv-bar kbd { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin-left: 16px; background: var(--btn); color: var(--ink); border: 0; font: 12px Consolas, monospace; }
+@media (prefers-reduced-motion: reduce) { .nv-scene * { animation: none !important; transition: none !important; } }
+
+/* --- The scene: one star, its shells and rays --------------------------------- */
+.nv-scene .sky { fill: #05030a; }
+.nv-scene .dust { fill: #4a4260; }
+.nv-scene .shell.s2 { fill: #1a0d22; transform-origin: 800px 190px; transform: scale(calc(0.25 + var(--f, 0) * 0.75)); }
+.nv-scene .shell.s1 { fill: #3a1640; transform-origin: 800px 190px; transform: scale(calc(0.25 + var(--f, 0) * 0.75)); }
+.nv-scene .rays { transform-origin: 800px 190px; transform: scale(calc(0.2 + var(--f, 0) * 0.8)); }
+.nv-scene .ray.a { fill: #5a2450; }
+.nv-scene .ray.b { fill: #82406e; }
+.nv-scene .core-halo { fill: #ff9ad5; opacity: 0.35; }
+.nv-scene .core { fill: #fff6fb; }
+.nv-scene.ready .ray.a { fill: #c0508a; }
+.nv-scene.ready .ray.b { fill: #ffb0dc; }
+.nv-scene.ready .shell.s1 { fill: #6a2058; }
+.nv-scene.ready .core-halo { opacity: 0.6; animation: nv-breathe 4s ease-in-out infinite; }
+@keyframes nv-breathe { 50% { opacity: 0.85; } }
+@media (prefers-reduced-motion: reduce) { .nv-scene * { animation: none !important; } }
+
+/* --- The white-out at a Nova (added to the page for a few seconds) ------------- */
+.nova-flash { position: fixed; inset: 0; z-index: 50; background: #fff; pointer-events: none; animation: nova-flash 3.2s ease-out forwards; }
+@keyframes nova-flash { 0% { opacity: 0; } 8% { opacity: 1; } 35% { opacity: 1; } 100% { opacity: 0; } }

@@ -232,3 +232,9 @@ export function dial({ min, max, step = 1, onInput }) {
     },
   };
 }
+
+/** "Gamespeed: N×", with decimals while the speed is small (Nova's tree adds ×1.03 at a time). */
+export function speedLabel(p) {
+  const n = p < 10 ? String(Number(p.toFixed(2))) : formatInt(p);
+  return `Gamespeed: ${n}×`;
+}

@@ -1,6 +1,6 @@
 // Starts the game in the browser: loads the save, runs the clock, draws the
 // current tab, and saves again.
-import { newState, loadState, tick, catchUp } from '../game.js';
+import { newState, loadState, tick, catchUp, goNova } from '../game.js';
 import { drain } from '../core/events.js';
 import { serialize, fromExportString } from '../core/save.js';
 import { formatTime } from '../core/num.js';
@@ -17,6 +17,9 @@ import { unlocked as eclipseUnlocked, shining, WORLDS } from '../eclipse.js';
 import { buildObservatory } from './observatory-view.js';
 import { unlocked as observatoryUnlocked } from '../observatory.js';
 import { buildOptions } from './options-view.js';
+import { buildNova } from './nova-view.js';
+import { ready as novaReady } from '../nova.js';
+import { REDUCED } from './scene.js';
 
 const SAVE_KEY = 'manifold.save';
 const AWAY_THRESHOLD = 10; // seconds of absence before it counts as being away
@@ -47,6 +50,11 @@ const game = {
     drain();
     game.save();
   },
+  nova() {
+    if (!goNova(game.state)) return;
+    game.save();
+    render();
+  },
 };
 
 function readSave() {
@@ -69,7 +77,16 @@ function showEvents() {
     if (e.type === 'peal') toast(e.name, e.text);
     if (e.type === 'eclipse') toast('Eclipse', `+${e.gain.toString()} corona.`);
     if (e.type === 'star') toast(e.sky, `Star ${e.n} charted.`);
+    if (e.type === 'nova') whiteOut();
   }
+}
+
+// A Nova turns the whole page white for a moment.
+function whiteOut() {
+  if (REDUCED) return;
+  const el = h('div', { class: 'nova-flash' });
+  document.body.append(el);
+  setTimeout(() => el.remove(), 3400);
 }
 
 function comeBack(seconds) {
@@ -109,7 +126,8 @@ const views = [
   { id: 'stormfront', label: 'Stormfront', view: buildStormfront(game), open: (s) => !!s.atlas.nodes.stormfront },
   { id: 'atlas', label: 'Atlas', view: buildAtlas(game), open: (s) => s.atlas.seen },
   { id: 'eclipse', label: 'Eclipse', view: buildEclipse(game), open: (s) => eclipseUnlocked(s) },
-  { id: 'observatory', label: 'Observatory', view: buildObservatory(game), open: (s) => observatoryUnlocked(s) },
+  { id: 'observatory', label: 'Observatory', view: buildObservatory(game), open: (s) => observatoryUnlocked(s) || s.nova.count > 0 },
+  { id: 'nova', label: 'Nova', view: buildNova(game), open: (s) => novaReady(s) || s.nova.count > 0 },
   { id: 'options', label: 'Options', view: buildOptions(game), open: () => true },
 ];
 for (const v of views) {
@@ -120,7 +138,7 @@ document.getElementById('app').append(
   h('header', { class: 'top' },
     h('h1', {}, 'Manifold'),
     h('nav', { class: 'tabs' }, views.map((v) => v.btn)),
-    h('span', { class: 'version' }, 'v0.14')),
+    h('span', { class: 'version' }, 'v0.15')),
   ...views.map((v) => v.view.el));
 
 function currentView() {

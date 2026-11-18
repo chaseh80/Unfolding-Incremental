@@ -98,6 +98,7 @@ export function defaults() {
     // Where each telescope points ('' for nowhere) and how long it has been there.
     at: ['', '', ''],
     held: [0, 0, 0],
+    lock: [0, 0, 0], // seconds before a telescope can move again (Fixed stars, from Nova)
     sight: perWorld(() => 0), // sightings in hand
     best: perWorld(() => D(0)), // the most each world has shown since the Observatory opened
     stars: perWorld(() => 0),
@@ -168,10 +169,14 @@ export function reached(state, kind) {
   return MILESTONES.filter((m) => m.kind === kind && total >= m.stars).length;
 }
 
-/** What multiplies every telescope: milestones, and Aperture bought with corona. */
+/** What multiplies every telescope: milestones, Aperture bought with corona, and Nova's tree and Clear skies. */
 export function skyMult(state) {
-  return Math.pow(BAL.fastMult, reached(state, 'fast')) * Math.pow(BAL.apertureMult, state.eclipse.aperture || 0);
+  const n = state.nova;
+  const nova = n ? (n.scope || 1) * Math.pow(1.25, state.atlas.clear || 0) : 1;
+  return Math.pow(BAL.fastMult, reached(state, 'fast')) * Math.pow(BAL.apertureMult, state.eclipse.aperture || 0) * nova;
 }
+
+const novaFlag = (state, flag) => !!(state.nova && state.nova.flags[flag]);
 
 export function lensMult(state, world) {
   return Math.pow(BAL.lensMult, state.observatory.lens[world]);
@@ -184,11 +189,17 @@ export function scopeOn(state, world) {
   return -1;
 }
 
-/** Sightings per second of a world. Nothing unless a telescope is on it. */
+/** Sightings per second of a world. Nothing unless a telescope is on it, or Wide field (from Nova) is owned. */
 export function rate(state, world) {
   const i = scopeOn(state, world);
-  if (i < 0) return 0;
-  return BAL.rate * light(state, world) * focus(state, i) * lensMult(state, world) * skyMult(state);
+  const base = BAL.rate * light(state, world) * lensMult(state, world) * skyMult(state);
+  if (i >= 0) return base * focus(state, i);
+  return novaFlag(state, 'wideField') ? base * 0.1 : 0;
+}
+
+/** True while Fixed stars (from Nova) holds a telescope where it is. */
+export function locked(state, scope) {
+  return novaFlag(state, 'fixedStars') && state.observatory.lock[scope] > 0;
 }
 
 /** Point a telescope at a world. Moving it starts its focus again. */
@@ -200,6 +211,10 @@ export function point(state, scope, world) {
   // Two telescopes can't watch the same world: the other one swaps over,
   // and both start their focus again.
   const other = world === '' ? -1 : scopeOn(state, world);
+  if (locked(state, scope) || (other >= 0 && locked(state, other))) return false;
+  const hold = novaFlag(state, 'fixedStars') ? 3600 : 0;
+  if (other >= 0) o.lock[other] = hold;
+  o.lock[scope] = hold;
   if (other >= 0) { o.at[other] = o.at[scope]; o.held[other] = reached(state, 'steady') ? o.held[other] / 2 : 0; }
   o.at[scope] = world;
   o.held[scope] = reached(state, 'steady') ? o.held[scope] / 2 : 0;
@@ -210,7 +225,9 @@ export function point(state, scope, world) {
 export function nextStar(state, world) {
   const n = state.observatory.stars[world];
   if (n >= BAL.stars) return null;
-  return { n, sight: BAL.starCost * Math.pow(BAL.starGrowth, n), record: D(INFO[world].records[n]) };
+  // Star memory (from Nova): the first star costs no sightings.
+  const sight = n === 0 && novaFlag(state, 'starMemory') ? 0 : BAL.starCost * Math.pow(BAL.starGrowth, n);
+  return { n, sight, record: D(INFO[world].records[n]) };
 }
 
 export function canChart(state, world) {
@@ -279,9 +296,14 @@ export function tick(state, dt) {
   // counted at the focus it only reaches at its end.
   const scopes = scopeCount(state);
   for (let i = 0; i < scopes; i++) {
+    o.lock[i] = Math.max(0, o.lock[i] - dt);
     const world = o.at[i];
     if (!world) continue;
     o.sight[world] += rate(state, world) * dt;
     o.held[i] += dt;
+  }
+  // Wide field: the worlds no telescope is on.
+  if (novaFlag(state, 'wideField')) {
+    for (const w of WORLD_INFO) if (scopeOn(state, w.id) < 0) o.sight[w.id] += rate(state, w.id) * dt;
   }
 }

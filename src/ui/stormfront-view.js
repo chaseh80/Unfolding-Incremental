@@ -3,7 +3,7 @@
 // and fulgurite.
 import { h, setText, setShown, setClass, setDisabled, confirmBox } from './dom.js';
 import { format, formatInt, formatMult, formatTime } from '../core/num.js';
-import { setWidth, upgradeGrid, feedRow, subTabs, resetBox, breakdown, shineStat, real } from './parts.js';
+import { setWidth, upgradeGrid, feedRow, subTabs, resetBox, breakdown, shineStat, real, speedLabel } from './parts.js';
 import { struckPower, paceMult } from '../worlds/links.js';
 import * as sf from '../worlds/stormfront.js';
 
@@ -457,7 +457,7 @@ export function buildStormfront(game) {
     setShown(fulgStat, !!c.seen.pass);
     setText(fulgAmount, whole(c.fulgurite));
     setShown(speedText, p > 1);
-    setText(speedText, `Gamespeed: ${formatInt(p)}×`);
+    setText(speedText, speedLabel(p));
 
     const active = tabs.update((tab) => tab.open(c));
     // Draw a strike that happened since the last frame, where it landed.

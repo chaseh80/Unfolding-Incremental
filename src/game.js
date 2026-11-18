@@ -4,6 +4,7 @@ import { mergeSave, SAVE_VERSION } from './core/save.js';
 import * as atlas from './atlas.js';
 import * as eclipse from './eclipse.js';
 import * as observatory from './observatory.js';
+import * as nova from './nova.js';
 import * as cinder from './worlds/cinder.js';
 import * as tidewater from './worlds/tidewater.js';
 import * as grove from './worlds/grove.js';
@@ -35,6 +36,7 @@ export function newState(now = Date.now()) {
     atlas: atlas.defaults(),
     eclipse: eclipse.defaults(),
     observatory: observatory.defaults(),
+    nova: nova.defaults(),
     cinder: cinder.defaults(),
     tidewater: tidewater.defaults(),
     grove: grove.defaults(),
@@ -49,6 +51,7 @@ export function loadState(raw, now = Date.now()) {
   state.version = SAVE_VERSION;
   // Saves from before the Atlas existed may already have finished Cinder.
   if (state.cinder.done) state.atlas.seen = true;
+  nova.refresh(state);
   return state;
 }
 
@@ -65,7 +68,13 @@ export function tick(state, dt) {
   eclipse.tick(state, dt);
   // The Observatory runs in real time whatever speed the worlds run at.
   observatory.tick(state, dt);
+  nova.tick(state, dt);
   if (state.cinder.done) state.atlas.seen = true;
+}
+
+/** A Nova: everything below it starts again from a brand new game. */
+export function goNova(state) {
+  return nova.nova(state, newState());
 }
 
 /**

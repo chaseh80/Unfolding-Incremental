@@ -389,7 +389,9 @@ export function strike(state) {
     s.thunder = s.thunder.add(size);
     s.totalThunder = s.totalThunder.add(size);
   }
-  if (aim === 'mast') {
+  // Lightning rod (from Nova): ground strikes count for the mast as well.
+  const rod = aim === 'ground' && state.nova && state.nova.flags.lightningRod && targetOpen(state, 'mast');
+  if (aim === 'mast' || rod) {
     if (size.gt(s.mast)) s.mast = size;
   } else if (aim === 'sky') {
     if (size.gt(s.sky)) s.sky = size;

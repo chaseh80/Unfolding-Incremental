@@ -8,7 +8,7 @@
 // the tray under it. Each gear's tile in the tray also levels it up.
 import { h, setText, setShown, setClass, setDisabled, confirmBox } from './dom.js';
 import { format, formatInt, formatMult, formatTime } from '../core/num.js';
-import { upgradeGrid, subTabs, breakdown, shineStat } from './parts.js';
+import { upgradeGrid, subTabs, breakdown, shineStat, speedLabel } from './parts.js';
 import { attr, showSvg, makeScene, mainBar } from './scene.js';
 import * as cw from '../worlds/clockwork.js';
 import { paceMult } from '../worlds/links.js';
@@ -421,7 +421,7 @@ export function buildClockwork(game) {
     setShown(springStat, !!k.seen.rewind);
     setText(springAmount, whole(k.springs));
     setShown(speedText, p > 1);
-    setText(speedText, `Gamespeed: ${formatInt(p)}×`);
+    setText(speedText, speedLabel(p));
 
     shine.set(d.shine, k.pending, p);
     const active = tabs.update((tab) => tab.open(k));

@@ -76,6 +76,7 @@ export function defaults() {
     total: D(0), // all starlight ever gathered
     nodes: {},
     seen: false, // the Atlas tab stays once it has appeared
+    clear: 0, // levels of Clear skies (from Nova), lost at an Eclipse
   };
 }
 
@@ -85,7 +86,7 @@ export function has(state, id) {
 
 /** What a node costs right now. An Eclipse upgrade makes everything cheaper. */
 export function costOf(state, node) {
-  return node.cost / (state.eclipse.discount || 1);
+  return node.cost / (state.eclipse.discount || 1) / ((state.nova && state.nova.cheap) || 1);
 }
 
 export function available(state, node) {

@@ -366,12 +366,12 @@ export function feedAll(state) {
   return bought;
 }
 
-function resetBurn(c, keepEmbers = false) {
+function resetBurn(c, keepEmbers = false, halveEmbers = false) {
   c.heat = D(BAL.startHeat);
   c.burnHeat = D(0);
   c.feeds = { kindling: 0, bellows: 0, flue: 0 };
   c.peakTemp = BAL.tempBase;
-  if (!keepEmbers) c.burnTime = 0;
+  if (!keepEmbers) c.burnTime = halveEmbers ? c.burnTime / 2 : 0;
   c.lit = !!c.ashUp.banked;
   if (!c.lit) c.heat = D(0);
 }
@@ -385,7 +385,7 @@ export function burnDown(state) {
   c.burns += 1;
   c.seen.embers = true;
   emit('burn', { gain: d.ashGain, time: c.burnTime });
-  resetBurn(c, !!state.eclipse.up.c_embers);
+  resetBurn(c, !!state.eclipse.up.c_embers, !!(state.nova && state.nova.flags.bankedFire));
   return true;
 }
 

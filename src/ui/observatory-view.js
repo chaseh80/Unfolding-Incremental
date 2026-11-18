@@ -7,6 +7,7 @@ import { h, setText, setShown, setClass, setDisabled } from './dom.js';
 import { format, formatDown, formatInt, formatTime } from '../core/num.js';
 import { attr, showSvg, rng, makeScene, WORLD_COLOUR } from './scene.js';
 import * as obs from '../observatory.js';
+import { buildSky } from './sky-view.js';
 
 const whole = (x) => formatInt(x);
 const ORDINAL = ['First', 'Second', 'Third'];
@@ -59,9 +60,8 @@ export function buildObservatory(game) {
   const starCount = h('b');
   const strip = h('header', { class: 'ob-strip' },
     h('div', { class: 'ob-stat' }, starCount, h('span', {}, `of ${obs.MOST_STARS} stars charted`)));
-  const doneNotice = h('div', { class: 'notice' },
-    h('h3', {}, 'The sky is charted'),
-    h('p', { class: 'desc' }, 'Every constellation is finished. What that opens is not built yet.'));
+  // Nova's tree, above the constellations. It shows from thirty stars on.
+  const tree = buildSky(game);
 
   const sc = makeScene('ob-scene', skySvg());
   const scene = sc.el;
@@ -121,17 +121,25 @@ export function buildObservatory(game) {
     h('p', { class: 'desc' }, 'Paid for by two worlds at once, out of what they hold right now.'),
     h('div', { class: 'grid' }, instruments.map((k) => k.el)));
 
+  // Everything that needs the Observatory open. After a Nova it closes again
+  // until the first expansion, and only the sky shows.
+  const below = h('div', {},
+    h('p', { class: 'lead' }, 'Telescopes gather sightings faster the more starlight a world has gathered this Eclipse.'),
+    scopeBox, milestoneBox, worldGrid, instrumentGroup);
+
   const el = h('section', { class: 'ob', 'data-world': 'observatory' }, strip,
-    h('div', { class: 'panel' }, scene,
-      h('p', { class: 'lead' }, 'Telescopes gather sightings faster the more starlight a world has gathered this Eclipse.'),
-      doneNotice, scopeBox, milestoneBox, worldGrid, instrumentGroup));
+    h('div', { class: 'panel' }, tree.el, scene, below));
 
   function update() {
     const s = S();
     const o = O();
     const total = obs.totalStars(s);
     setText(starCount, whole(total));
-    setShown(doneNotice, total >= obs.MOST_STARS);
+    tree.update();
+    // After a Nova the constellations stay, dark, under the sky.
+    const open = obs.unlocked(s);
+    setShown(scene, open || s.nova.count > 0);
+    setShown(below, open);
 
     const count = obs.scopeCount(s);
     const full = obs.focusMax(s);

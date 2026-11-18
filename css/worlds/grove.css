@@ -138,3 +138,6 @@ html:has(section.gr:not([hidden])) { background: #070b07; }
 /* Slow, looping motion only. */
 .gr-scene .fly { animation: gr-drift 14s linear infinite; opacity: 0; }
 @keyframes gr-drift { 0% { transform: translate(0, 0); opacity: 0; } 20% { opacity: 1; } 50% { opacity: 0.3; } 80% { opacity: 1; } 100% { transform: translate(var(--dx), -40px); opacity: 0; } }
+
+/* "99%" and "100%" differ in width; a fixed width keeps the strip from shifting. */
+.gr-stat b.gr-full { min-width: 4ch; }

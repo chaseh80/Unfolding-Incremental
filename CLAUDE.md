@@ -17,7 +17,7 @@ Read `README.md` first. It describes every world and layer as built, the simulat
 - **Atlas**: a world that shines gathers starlight; folding it banks the starlight and resets that world only. Starlight buys worlds, automation and routes between worlds.
 - **Eclipse**: resets everything below for corona. Corona = floor((1 + P/8)^3), P = powers of ten of that run's starlight past 3e18. Buys general upgrades (1, 2, 5, 12 corona), five upgrades per world, six expansions (new content per world), and Aperture (repeatable).
 - **Observatory**: opens with the first expansion, runs in real time, never resets. Telescopes pointed by hand gather sightings; sightings plus a record in the world chart stars (six constellations of eight). Star milestones give charges, which make corona upgrades stronger from the next Eclipse.
-- **Not built**: the next big reset layer above Eclipse (skill tree, more worlds). The plan for it is at the end of this file once agreed.
+- **Nova** (prototype, untuned): opens at 30 stars, wipes everything below, pays stardust for the tree in the sky (`src/sky.js`, drawn above the Observatory's constellations) and for stardust upgrades. See `NOVA-PLAN.md`. Not built yet: more of the tree, new worlds.
 
 ## Chase's rules (a design must pass all of these)
 
@@ -60,18 +60,20 @@ Short, plain, effect first. Names may carry flavour; descriptions never do. No c
 ## Code conventions
 
 - No build step. ES modules served by `python -m http.server 8321`. Big numbers are break_eternity `Decimal` via `D()` in `src/core/num.js`.
-- All game logic is free of the DOM: `src/game.js`, `src/atlas.js`, `src/eclipse.js`, `src/observatory.js`, `src/worlds/*.js`. The simulator runs the same code.
+- All game logic is free of the DOM: `src/game.js`, `src/atlas.js`, `src/eclipse.js`, `src/observatory.js`, `src/nova.js`, `src/sky.js`, `src/worlds/*.js`. The simulator runs the same code.
 - A world module exports `BAL` (every tunable number), `defaults()`, `calc(state)`, its actions, `fold(state)` and `tick(state, dt)`. Worlds are ticked with `dt × paceMult`; the Observatory with real `dt`.
-- Things one layer does to another go through `src/worlds/links.js` as numbers stored on state (`eclipse.pace`, `light`, `discount`, `boost`, `passive`, `struck`, `gather`; `grove.ringLight` and the like). Worlds never import each other or Eclipse.
+- Things one layer does to another go through `src/worlds/links.js` as numbers stored on state (`eclipse.pace`, `light`, `discount`, `boost`, `passive`, `struck`, `gather`; `nova.pace`, `cheap`, `scope`, `flags`; `grove.ringLight` and the like). Worlds never import each other, Eclipse or Nova; a tree notable is a named flag in `state.nova.flags` that the world checks.
+- `nova.refresh(state)` adds the tree and stardust upgrades up into those numbers; call it after anything changes them. A Nova replaces every part of state except `nova`, `options`, `ui` and the clocks with a fresh `newState()` (`goNova` in `game.js`).
 - `eclipse.refresh(state)` recomputes those numbers; call it after anything that changes upgrades or charges.
 - Saves: `mergeSave(defaults, loaded)` walks the defaults, so adding a field to `defaults()` is safe for old saves. An empty object in defaults is an open-ended set. Arrays are copied whole.
 - Pages are built once in `src/ui/*-view.js` with `h()` and updated with `setText`, `setShown`, `setClass`, `setDisabled`. Each view returns `{ el, update, key }` and is listed in `src/ui/app.js`.
 - Events: logic calls `emit(type, data)`; the page and the simulator `drain()` them.
-- Bump the version label in `src/ui/app.js` with each slice (now v0.13).
+- Bump the version label in `src/ui/app.js` with each slice (now v0.15).
 
 ## Testing in the browser
 
-- The preview config is in the **outer** folder's `.claude/launch.json` (name `manifold`, port 8321, serving this folder).
+- The preview config is in the **outer** folder's `.claude/launch.json` (name `manifold`, port 8321, serving this folder). Port 8321 has been seen held by another server serving an older copy from elsewhere; `manifold-alt` serves this folder on 8325.
+- `?devsave=sim/out/save-nova.txt` is the late save with 32 stars charted, for testing Nova.
 - `?devsave=sim/out/save10.txt` loads a test save without touching the real one; `?speed=30` runs faster. Make a test save from a simulator state with `toExportString(state)`.
 - The browser caches modules hard. After editing, `fetch(file, { cache: 'reload' })` for each changed file, then navigate again.
 - Click things with JavaScript (`element.click()`), not coordinates.
@@ -104,7 +106,7 @@ Short, plain, effect first. Names may carry flavour; descriptions never do. No c
 
 ## Plan for the next layer
 
-Agreed with Chase on 2026-11-15. Names are placeholders. Nothing of it is built.
+Agreed with Chase on 2026-11-15. Names are placeholders. Nothing of it is built. The detailed draft (stardust formula, tree data, the first 20-node tree, the questions still open) is in `NOVA-PLAN.md`.
 
 ### The reset (working name: Nova)
 

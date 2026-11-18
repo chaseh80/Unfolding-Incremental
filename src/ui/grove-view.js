@@ -1,7 +1,7 @@
 // Everything you see while looking at Grove.
 import { h, setText, setShown, setClass, confirmBox } from './dom.js';
 import { Decimal, format, formatInt, formatMult, formatTime } from '../core/num.js';
-import { setWidth, upgradeGrid, subTabs, pointList, resetBox, breakdown, shineStat, dial, real } from './parts.js';
+import { setWidth, upgradeGrid, subTabs, pointList, resetBox, breakdown, shineStat, dial, real, speedLabel } from './parts.js';
 import { f0, attr, showSvg, dec, rng, makeScene, mainBar } from './scene.js';
 import * as grove from '../worlds/grove.js';
 import { paceMult } from '../worlds/links.js';
@@ -59,7 +59,20 @@ export function buildGrove(game) {
   const treeAmount = h('b');
   const roomAmount = h('b');
   const sapAmount = h('b');
-  const fullAmount = h('b');
+  const fullAmount = h('b', { class: 'gr-full' });
+  // A full grove sits right at its room and wobbles between 99% and 100%
+  // every frame. A one-point change is shown only once it has held for two
+  // seconds, so the number never flickers.
+  let shownFull = -1;
+  let heldPct = -1;
+  let heldSince = 0;
+  function steadyFull(fullness) {
+    const pct = Math.floor(fullness * 100);
+    const now = performance.now();
+    if (pct !== heldPct) { heldPct = pct; heldSince = now; }
+    if (Math.abs(pct - shownFull) > 1 || now - heldSince >= 2000) shownFull = pct;
+    return shownFull;
+  }
   const speedText = h('div', { class: 'gr-speed' });
   const strip = h('header', { class: 'gr-strip' },
     h('div', { class: 'gr-stat' }, treeAmount, h('span', {}, 'trees')),
@@ -72,9 +85,9 @@ export function buildGrove(game) {
     setText(treeAmount, g.planted ? amount(g.trees) : '0');
     setText(roomAmount, g.planted ? amount(d.room) : '-');
     setText(sapAmount, g.planted ? amount(real(d.sap, pace())) : '0');
-    setText(fullAmount, g.planted ? `${Math.floor(d.fullness * 100)}%` : '-');
+    setText(fullAmount, g.planted ? `${steadyFull(d.fullness)}%` : '-');
     setShown(speedText, pace() > 1);
-    setText(speedText, `Gamespeed: ${whole(pace())}×`);
+    setText(speedText, speedLabel(pace()));
   }
 
   // --- The forest --------------------------------------------------------

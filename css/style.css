@@ -296,6 +296,7 @@ nav.tabs button[data-world=stormfront] { --w: #a9d8ff; }
 nav.tabs button[data-world=atlas] { --w: #c8c0b4; }
 nav.tabs button[data-world=eclipse] { --w: #ffb86b; }
 nav.tabs button[data-world=observatory] { --w: #f2e3a0; }
+nav.tabs button[data-world=nova] { --w: #ff9ad5; }
 header.top:has(button.on[data-world=cinder]) { --tab: #ff8a2a; }
 header.top:has(button.on[data-world=tidewater]) { --tab: #5fa8cf; }
 header.top:has(button.on[data-world=grove]) { --tab: #8fcf7a; }
@@ -305,6 +306,7 @@ header.top:has(button.on[data-world=stormfront]) { --tab: #a9d8ff; }
 header.top:has(button.on[data-world=atlas]) { --tab: #c8c0b4; }
 header.top:has(button.on[data-world=eclipse]) { --tab: #ffb86b; }
 header.top:has(button.on[data-world=observatory]) { --tab: #f2e3a0; }
+header.top:has(button.on[data-world=nova]) { --tab: #ff9ad5; }
 
 /* --- Shining: a stat in the world's strip, a star on its tab ------------------
    The stat is in starlight's pale white, not the world's colour, and opens the
