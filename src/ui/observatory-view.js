@@ -123,7 +123,7 @@ export function buildObservatory(game) {
 
   const el = h('section', { class: 'ob', 'data-world': 'observatory' }, strip,
     h('div', { class: 'panel' }, scene,
-      h('p', { class: 'lead' }, 'A telescope pointed at a world gathers sightings of it, faster the more starlight that world has gathered this Eclipse. Sightings chart stars. Nothing here is ever reset, and nothing here changes a world.'),
+      h('p', { class: 'lead' }, 'Telescopes gather sightings faster the more starlight a world has gathered this Eclipse.'),
       doneNotice, scopeBox, milestoneBox, worldGrid, instrumentGroup));
 
   function update() {

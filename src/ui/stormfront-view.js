@@ -3,7 +3,7 @@
 // and fulgurite.
 import { h, setText, setShown, setClass, setDisabled, confirmBox } from './dom.js';
 import { format, formatInt, formatMult, formatTime } from '../core/num.js';
-import { setWidth, upgradeGrid, feedRow, subTabs, resetBox, breakdown, shineNotice, real } from './parts.js';
+import { setWidth, upgradeGrid, feedRow, subTabs, resetBox, breakdown, shineStat, real } from './parts.js';
 import { struckPower, paceMult } from '../worlds/links.js';
 import * as sf from '../worlds/stormfront.js';
 
@@ -392,7 +392,8 @@ export function buildStormfront(game) {
   }
 
   const sources = breakdown('Charge', ['Updrafts', 'Mast', 'Fulgurite', 'Peals', 'Other'], 'Per second');
-  const shine = shineNotice('Stormfront');
+  const shine = shineStat('sf', game);
+  strip.insertBefore(shine.el, speedText);
 
   // --- Peals: a wall of tiles -------------------------------------------------
 
@@ -432,7 +433,7 @@ export function buildStormfront(game) {
   });
   const fulgBox = h('div', { class: 'sf-panel gold' }, h('h3', {}, 'Fulgurite', fulgText), fulgGrid.el);
 
-  const stormPanel = h('div', {}, shine.el, aimBox,
+  const stormPanel = h('div', {}, aimBox,
     h('div', { class: 'sf-layout' },
       h('div', { class: 'sf-col' }, cloudBox),
       h('div', { class: 'sf-col' }, feedBox, pass.el, sources.el)));

@@ -1,7 +1,7 @@
 // Everything you see while looking at Cinder.
 import { h, setText, setShown, setClass, setDisabled, confirmBox } from './dom.js';
 import { Decimal, format, formatInt, formatMult, formatTemp, formatTime } from '../core/num.js';
-import { upgradeGrid, feedRow, subTabs, pointList, resetBox, breakdown, shineNotice, dial, real } from './parts.js';
+import { upgradeGrid, feedRow, subTabs, pointList, resetBox, breakdown, shineStat, dial, real } from './parts.js';
 import * as cinder from '../worlds/cinder.js';
 import { paceMult } from '../worlds/links.js';
 
@@ -266,16 +266,16 @@ export function buildCinder(game) {
   }
 
   const sources = breakdown('Heat sources', ['Kindling', 'Bellows', 'Ignition points', 'Ash', 'Embers', 'Glass', 'Other'], 'Heat per second');
-  const shine = shineNotice('Cinder');
+  const shine = shineStat('cd', game);
+  strip.insertBefore(shine.el, speedText);
 
   const feedBox = h('div', { class: 'box cd-feeds' }, h('h3', {}, 'Hearth'), Object.values(feeds).map((f) => f.el), buyAll);
-  const firePanel = h('div', { class: 'panel' }, scene, shine.el,
+  const firePanel = h('div', { class: 'panel' }, scene,
     h('div', { class: 'cd-layout' },
       h('div', { class: 'cd-col' }, feedBox, damperBox),
       h('div', { class: 'cd-col' }, embersBox, sources.el)));
 
   function updateFire(c, d) {
-    shine.set(d.shine, c.pending, pace());
     updateScene(c, d);
     updateMain(c, d);
     setShown(feedBox, c.lit);
@@ -303,7 +303,7 @@ export function buildCinder(game) {
     }
 
     setShown(embersBox, c.lit && !!c.seen.embers);
-    if (c.seen.embers) setText(embersText, `Building for ${formatTime(c.burnTime)}. Heat ×${format(d.embers, 2)}. Resets on burn down.`);
+    if (c.seen.embers) setText(embersText, `Multiplying heat by ${format(d.embers, 2)} due to ${formatTime(c.burnTime)} spent building.`);
 
     const known = new Decimal(d.base).mul(d.bellowsMult).mul(d.ignitionMult).mul(d.ashBed).mul(d.embers).mul(d.glassHeat);
     const other = c.lit ? d.rate.div(known) : new Decimal(1);
@@ -418,6 +418,7 @@ export function buildCinder(game) {
     const c = C();
     const d = cinder.calc(S());
     updateStrip(c, d);
+    shine.set(d.shine, c.pending, pace());
     tabs.update((tab) => tab.open(c)).update(c, d);
   }
 

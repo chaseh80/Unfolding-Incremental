@@ -61,7 +61,8 @@ export function toast(title, body = '') {
 }
 
 export function confirmBox({ title, body, yes, no = 'Cancel', danger = false, onYes }) {
-  const root = document.getElementById('modal-root');
+  // Opened inside the tab that is showing, so it takes that tab's colours and buttons.
+  const root = document.querySelector('section[data-world]:not([hidden])') || document.getElementById('modal-root');
   const close = () => back.remove();
   const yesBtn = h('button', { class: 'act ' + (danger ? 'danger' : 'primary'), onclick: () => { close(); onYes(); } }, yes);
   const back = h('div', { class: 'modal-back', onclick: (e) => { if (e.target === back) close(); } },

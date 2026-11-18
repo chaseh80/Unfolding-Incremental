@@ -29,6 +29,7 @@ export function newState(now = Date.now()) {
       clockworkTab: 'train',
       hollowTab: 'cave',
       stormfrontTab: 'storm',
+      eclipseTab: 'eclipse',
       visited: {},
     },
     atlas: atlas.defaults(),

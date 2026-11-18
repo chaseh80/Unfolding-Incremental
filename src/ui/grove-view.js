@@ -1,7 +1,7 @@
 // Everything you see while looking at Grove.
 import { h, setText, setShown, setClass, confirmBox } from './dom.js';
 import { Decimal, format, formatInt, formatMult, formatTime } from '../core/num.js';
-import { setWidth, upgradeGrid, subTabs, pointList, resetBox, breakdown, shineNotice, dial, real } from './parts.js';
+import { setWidth, upgradeGrid, subTabs, pointList, resetBox, breakdown, shineStat, dial, real } from './parts.js';
 import { f0, attr, showSvg, dec, rng, makeScene, mainBar } from './scene.js';
 import * as grove from '../worlds/grove.js';
 import { paceMult } from '../worlds/links.js';
@@ -214,9 +214,10 @@ export function buildGrove(game) {
   }
 
   const rich = breakdown('Sap per tree', ['Age', 'Seeds', 'Loam', 'Stands', 'Other'], 'Sap per tree per second');
-  const shine = shineNotice('Grove');
+  const shine = shineStat('gr', game);
+  strip.insertBefore(shine.el, speedText);
 
-  const woodPanel = h('div', { class: 'panel leaf-accent' }, scene, shine.el,
+  const woodPanel = h('div', { class: 'panel leaf-accent' }, scene,
     h('div', { class: 'gr-layout' },
       h('div', { class: 'gr-col' }, shareBox, ageBox),
       h('div', { class: 'gr-col' }, rootBox.el, canopyBox.el, rich.el)));
@@ -228,7 +229,6 @@ export function buildGrove(game) {
       const light = grove.ringLight(S());
       setText(heartText, `Heartwood ${amount(g.heartSap)}: ${format(d.rings, 1)} rings, one for each power of ten. Kept through seedfall and fire. Sap ${formatMult(d.heartMult)}.${light > 1 ? ` All starlight ${formatMult(light)}.` : ''}`);
     }
-    shine.set(d.shine, g.pending, pace());
     updateScene(g, d);
     updateMain(g, d);
     for (const el of [shareBox, rootBox.el, canopyBox.el]) setShown(el, g.planted);
@@ -365,6 +365,7 @@ export function buildGrove(game) {
     const g = G();
     const d = grove.calc(S());
     updateStrip(g, d);
+    shine.set(d.shine, g.pending, pace());
     tabs.update((tab) => tab.open(g)).update(g, d);
   }
 

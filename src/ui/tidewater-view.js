@@ -1,7 +1,7 @@
 // Everything you see while looking at Tidewater.
 import { h, setText, setShown, setClass, confirmBox } from './dom.js';
 import { Decimal, format, formatInt, formatMult } from '../core/num.js';
-import { upgradeGrid, feedRow, subTabs, pointList, resetBox, breakdown, shineNotice, dial, real } from './parts.js';
+import { upgradeGrid, feedRow, subTabs, pointList, resetBox, breakdown, shineStat, dial, real } from './parts.js';
 import { REDUCED, f0, attr, showSvg, dec, rng, makeScene, mainBar } from './scene.js';
 import * as tw from '../worlds/tidewater.js';
 import { paceMult } from '../worlds/links.js';
@@ -248,17 +248,17 @@ export function buildTidewater(game) {
   }
 
   const worth = breakdown('Salt per brine', ['Kelp', 'Driftwood', 'Strandlines', 'Other'], 'Salt per brine');
-  const shine = shineNotice('Tidewater');
+  const shine = shineStat('tw', game);
+  strip.insertBefore(shine.el, speedText);
 
   const feedBox = h('div', { class: 'box tw-feeds' }, h('h3', {}, 'Shore'), Object.values(rows).map((r) => r.el), buyAll);
-  const shorePanel = h('div', { class: 'panel tide-accent' }, scene, shine.el,
+  const shorePanel = h('div', { class: 'panel tide-accent' }, scene,
     h('div', { class: 'tw-layout' },
       h('div', { class: 'tw-col' }, tideBox, kelpBox, reefBox),
       h('div', { class: 'tw-col' }, feedBox, worth.el)));
 
   function updateShore(t, d) {
     updateReef(t);
-    shine.set(d.shine, t.pending, pace());
     updateScene(t, d);
     updateMain(t, d);
     setShown(feedBox, t.open);
@@ -345,6 +345,7 @@ export function buildTidewater(game) {
     const t = T();
     const d = tw.calc(S());
     updateStrip(t, d);
+    shine.set(d.shine, t.pending, pace());
     tabs.update((tab) => tab.open(t)).update(t, d);
   }
 

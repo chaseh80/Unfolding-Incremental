@@ -305,3 +305,27 @@ header.top:has(button.on[data-world=stormfront]) { --tab: #a9d8ff; }
 header.top:has(button.on[data-world=atlas]) { --tab: #c8c0b4; }
 header.top:has(button.on[data-world=eclipse]) { --tab: #ffb86b; }
 header.top:has(button.on[data-world=observatory]) { --tab: #f2e3a0; }
+
+/* --- Shining: a stat in the world's strip, a star on its tab ------------------
+   The stat is in starlight's pale white, not the world's colour, and opens the
+   Atlas when clicked. A shining world's tab square becomes a four-point star. */
+button.shine-stat { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+button.shine-stat b { color: #f4eedf; text-shadow: 0 0 10px rgba(244, 238, 223, 0.45); }
+button.shine-stat:hover b { color: #fff; text-shadow: 0 0 14px rgba(244, 238, 223, 0.7); }
+button.shine-stat:hover span { color: var(--ink); }
+nav.tabs button.shine::before {
+  width: 11px; height: 11px; margin: -2px; opacity: 1; box-shadow: none;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+}
+
+/* --- Confirm dialog: opened inside the tab that is showing, in its colours ---- */
+section[data-world] .modal {
+  --m: var(--accent, var(--bolt, #c8c0b4));
+  background: color-mix(in srgb, var(--m) 7%, #050505);
+  border: 1px solid var(--m); border-radius: 0; box-shadow: 6px 6px 0 #000;
+  color: var(--ink); text-align: left; padding: 20px 22px 18px; max-width: 480px;
+}
+section[data-world] .modal h3 { color: var(--m); font-size: 16px; font-weight: 400; margin: 0 0 10px; text-transform: none; letter-spacing: 0; }
+section[data-world] .modal p { color: var(--dim); font-size: 13px; margin: 0 0 18px; max-width: none; }
+section[data-world] .modal .row { display: flex; justify-content: flex-end; gap: 10px; margin: 0; }
+section.sf .modal { --m: var(--bolt); }

@@ -8,7 +8,7 @@
 // the tray under it. Each gear's tile in the tray also levels it up.
 import { h, setText, setShown, setClass, setDisabled, confirmBox } from './dom.js';
 import { format, formatInt, formatMult, formatTime } from '../core/num.js';
-import { upgradeGrid, subTabs, breakdown, shineNotice } from './parts.js';
+import { upgradeGrid, subTabs, breakdown, shineStat } from './parts.js';
 import { attr, showSvg, makeScene, mainBar } from './scene.js';
 import * as cw from '../worlds/clockwork.js';
 import { paceMult } from '../worlds/links.js';
@@ -301,9 +301,10 @@ export function buildClockwork(game) {
   }
 
   const sources = breakdown('Ticks per second', ['Train', 'Wear-in', 'Springs', 'Chimes', 'Other'], 'Total');
-  const shine = shineNotice('Clockwork');
+  const shine = shineStat('cw', game);
+  strip.insertBefore(shine.el, speedText);
 
-  const movementPanel = h('div', { class: 'panel' }, scene, shine.el,
+  const movementPanel = h('div', { class: 'panel' }, scene,
     h('div', { class: 'cw-layout' },
       h('div', { class: 'cw-col' }, trayBox),
       h('div', { class: 'cw-col' }, rewindBox, sources.el)));
@@ -422,9 +423,9 @@ export function buildClockwork(game) {
     setShown(speedText, p > 1);
     setText(speedText, `Gamespeed: ${formatInt(p)}×`);
 
+    shine.set(d.shine, k.pending, p);
     const active = tabs.update((tab) => tab.open(k));
     if (active.id === 'train') {
-      shine.set(d.shine, k.pending, p);
       updateScene(k, d);
       updateMain(k, d);
       updateTrain(k, d);

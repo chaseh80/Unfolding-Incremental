@@ -13,7 +13,7 @@ import { buildHollow } from './hollow-view.js';
 import { buildStormfront } from './stormfront-view.js';
 import { buildAtlas } from './atlas-view.js';
 import { buildEclipse } from './eclipse-view.js';
-import { unlocked as eclipseUnlocked } from '../eclipse.js';
+import { unlocked as eclipseUnlocked, shining, WORLDS } from '../eclipse.js';
 import { buildObservatory } from './observatory-view.js';
 import { unlocked as observatoryUnlocked } from '../observatory.js';
 import { buildOptions } from './options-view.js';
@@ -120,16 +120,31 @@ document.getElementById('app').append(
   h('header', { class: 'top' },
     h('h1', {}, 'Manifold'),
     h('nav', { class: 'tabs' }, views.map((v) => v.btn)),
-    h('span', { class: 'version' }, 'v0.13')),
+    h('span', { class: 'version' }, 'v0.14')),
   ...views.map((v) => v.view.el));
 
 function currentView() {
   return views.find((v) => v.id === game.state.ui.tab && v.open(game.state)) || views[0];
 }
 
+// Which worlds are shining, for the stars on the tabs. Checked twice a second,
+// not every frame, since it works out every world.
+let shineCheck = 0;
+function markShining(s) {
+  const now = performance.now();
+  if (now - shineCheck < 500) return;
+  shineCheck = now;
+  const lit = shining(s);
+  WORLDS.forEach((w, i) => {
+    const v = views.find((x) => x.id === w.id);
+    if (v) setClass(v.btn, 'shine', lit[i] && v.open(s));
+  });
+}
+
 function render() {
   const s = game.state;
   const current = currentView();
+  markShining(s);
   for (const v of views) {
     const open = v.open(s);
     setShown(v.btn, open);

@@ -128,29 +128,60 @@ html:has(section.ec:not([hidden])) { background: #040305; }
 .ec-bar kbd { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin-left: 16px; background: var(--btn); color: var(--ink); border: 0; font: 12px Consolas, monospace; }
 @media (prefers-reduced-motion: reduce) { .ec-scene * { animation: none !important; transition: none !important; } }
 
-/* Checkboxes: a plain square, filled when on */
-.ec label.check { display: flex; gap: 10px; align-items: center; justify-content: center; margin: 8px auto; cursor: pointer; font-size: 13px; color: var(--ink); text-align: left; flex-wrap: wrap; }
-.ec label.check input[type=checkbox] { appearance: none; -webkit-appearance: none; flex: none; width: 15px; height: 15px; margin: 0; border: 1px solid var(--btn-line); background: var(--btn); border-radius: 0; cursor: pointer; display: grid; place-content: center; }
-.ec label.check input[type=checkbox]:checked { background: var(--c, var(--acc)); border-color: var(--c, var(--acc)); }
-.ec label.check input[type=checkbox]:checked::after { content: ''; width: 5px; height: 5px; background: #0a0a0c; }
-.ec label.check b { font-weight: 400; color: var(--acc); }
+/* --- Charges: placed on the upgrade cards ---------------------------------------
+   A bought card that can take a charge shows its charged text on hover and
+   takes or drops a charge on click. A charged card burns white at the edge. */
+.ec-charges { margin: 26px auto 0; }
+.ec-charges .ec-stat b { font-size: 22px; color: #fff3dc; }
+.ec .upgrade .ctext, .ec .upgrade .hint { display: none; }
+.ec .upgrade .ctext { font-size: 12px; color: #fff3dc; }
+.ec .upgrade .hint { margin-top: auto; font-size: 12px; color: var(--acc2); }
+.ec .upgrade.chg { cursor: pointer; }
+.ec .upgrade.chg.full { cursor: default; }
+.ec .upgrade.chg.full .hint { color: var(--dim); }
+.ec .upgrade.chg:hover .text, .ec .upgrade.chg:focus-visible .text,
+.ec .upgrade.chg:hover .cost, .ec .upgrade.chg:focus-visible .cost { display: none; }
+.ec .upgrade.chg:hover .ctext, .ec .upgrade.chg:focus-visible .ctext,
+.ec .upgrade.chg:hover .hint, .ec .upgrade.chg:focus-visible .hint { display: block; }
+.ec .upgrade.chg:not(.charged):not(.full):hover { border-color: #fff3dc; }
+.ec .upgrade.charged .text { display: none; }
+.ec .upgrade.charged .ctext { display: block; }
+.ec .upgrade.charged {
+  border-color: #fff3dc;
+  background: radial-gradient(circle, #c86a22 0%, #5a2a12 45%, var(--tile) 90%);
+  box-shadow: 0 0 18px rgba(255, 207, 138, 0.45), inset 0 0 0 1px rgba(255, 243, 220, 0.35);
+}
+.ec .upgrade.charged .name::before { content: '\2726\00a0'; color: #fff3dc; }
+.ec .upgrade.charged .cost { color: #fff3dc; }
+.ec .upgrade.pending .cost { color: var(--acc2); font-style: italic; }
+
+/* The words a charge changes glow; on hover they breathe slowly. */
+.ec .upgrade .ctext b.up { font-weight: 600; color: #fff; text-shadow: 0 0 3px #fff, 0 0 8px #ffcf8a, 0 0 16px rgba(255, 184, 107, 0.85); }
+.ec .upgrade.chg:hover .ctext b.up, .ec .upgrade.chg:focus-visible .ctext b.up { animation: ec-up 2.4s ease-in-out infinite; }
+@keyframes ec-up {
+  0%, 100% { text-shadow: 0 0 3px #fff, 0 0 8px #ffcf8a, 0 0 16px rgba(255, 184, 107, 0.85); }
+  50% { text-shadow: 0 0 5px #fff, 0 0 12px #ffe0b0, 0 0 26px rgba(255, 184, 107, 1); }
+}
+@media (prefers-reduced-motion: reduce) { .ec .upgrade .ctext b.up { animation: none !important; } }
 
 /* --- Eclipse ----------------------------------------------------------------- */
 .ec .group { margin: 34px auto 0; }
 .ec .group h3 { margin-bottom: 0; }
-.ec .group[data-g=cinder] { --accent: #ff8a2a; --deep: #6a3210; }
-.ec .group[data-g=tidewater] { --accent: #5fa8cf; --deep: #1c4c68; }
-.ec .group[data-g=grove] { --accent: #8fcf7a; --deep: #2f5a24; }
-.ec .group[data-g=clockwork] { --accent: #d9b45a; --deep: #6e5420; }
-.ec .group[data-g=hollow] { --accent: #b28cf0; --deep: #4a2a82; }
-.ec .group[data-g=stormfront] { --accent: #a9d8ff; --deep: #2a587e; }
-.ec .group[data-g=cinder] h3 { color: #ff8a2a; }
-.ec .group[data-g=tidewater] h3 { color: #5fa8cf; }
-.ec .group[data-g=grove] h3 { color: #8fcf7a; }
-.ec .group[data-g=clockwork] h3 { color: #d9b45a; }
-.ec .group[data-g=hollow] h3 { color: #b28cf0; }
-.ec .group[data-g=stormfront] h3 { color: #a9d8ff; }
+/* Each world's sub-tab, and its button, takes that world's colours. */
+.ec [data-g=cinder] { --accent: #ff8a2a; --deep: #6a3210; }
+.ec [data-g=tidewater] { --accent: #5fa8cf; --deep: #1c4c68; }
+.ec [data-g=grove] { --accent: #8fcf7a; --deep: #2f5a24; }
+.ec [data-g=clockwork] { --accent: #d9b45a; --deep: #6e5420; }
+.ec [data-g=hollow] { --accent: #b28cf0; --deep: #4a2a82; }
+.ec [data-g=stormfront] { --accent: #a9d8ff; --deep: #2a587e; }
+.ec .ec-world h3 { color: var(--accent); }
 .ec .group .desc { margin-bottom: 4px; }
+.ec .ec-world { padding-top: 4px; }
+.ec .ec-world-name { margin: 6px 0 0; font: 400 30px/1.2 'Josefin', sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); text-shadow: 0 0 18px var(--deep); }
+.ec .ec-world .group:first-of-type { margin-top: 18px; }
+.ec .subtabs { flex-wrap: wrap; }
+.ec .subtabs button[data-g] { color: var(--accent); }
+.ec .subtabs button[data-g].on { border-color: var(--accent); background: var(--deep); color: #fff; }
 
 /* The scene: stacked cut-paper rings round a black disc */
 .ec-scene .sky { fill: #040305; }

@@ -114,27 +114,28 @@ export const TIERS = [1, 2, 5, 12];
 
 // pace: worlds that run faster, and by how much. keeps: Atlas upgrades that
 // survive an Eclipse. Anything else is looked up by id where it applies.
-// charged: what the upgrade does with a charge on it, a stronger version of
-// itself. more: the extra speed a charge adds to a pace upgrade.
+// charged: the whole text of the upgrade with a charge on it, a stronger
+// version of itself; the part in [brackets] is what the charge changes and
+// glows on the card. more: the extra speed a charge adds to a pace upgrade.
 export const UPGRADES = [
-  { id: 'totality', cost: 1, name: 'Totality', text: 'Every world runs 4× faster.', pace: [ALL, 4], more: 1.5, charged: '6× faster.' },
+  { id: 'totality', cost: 1, name: 'Totality', text: 'Every world runs 4× faster.', pace: [ALL, 4], more: 1.5, charged: 'Every world runs [6×] faster.' },
 
-  { id: 'dawn', cost: 2, name: 'Dawn side', text: 'Cinder, Tidewater and Grove run 4× faster.', pace: [['cinder', 'tidewater', 'grove'], 4], more: 2, charged: '8× faster.' },
-  { id: 'dusk', cost: 2, name: 'Dusk side', text: 'Clockwork, Hollow and Stormfront run 4× faster.', pace: [['clockwork', 'hollow', 'stormfront'], 4], more: 2, charged: '8× faster.' },
-  { id: 'bright', cost: 2, name: 'Bright sky', text: 'Starlight ×10.', charged: 'Starlight ×1,000.' },
-  { id: 'cheap', cost: 2, name: 'Thin pages', text: 'Atlas upgrades cost 10× less.', charged: '1,000× less.' },
-  { id: 'hands', cost: 2, name: 'Keepsakes', text: 'Keep every Hands upgrade and every upgrade that buys for you.', keeps: HANDS, charged: "Also keeps every world's Starlit upgrade." },
-  { id: 'auto_atlas', cost: 2, name: 'Cartographer', text: 'Buys Atlas upgrades automatically, cheapest first.', charged: 'Buys them without spending the starlight.' },
+  { id: 'dawn', cost: 2, name: 'Dawn side', text: 'Cinder, Tidewater and Grove run 4× faster.', pace: [['cinder', 'tidewater', 'grove'], 4], more: 2, charged: 'Cinder, Tidewater and Grove run [8×] faster.' },
+  { id: 'dusk', cost: 2, name: 'Dusk side', text: 'Clockwork, Hollow and Stormfront run 4× faster.', pace: [['clockwork', 'hollow', 'stormfront'], 4], more: 2, charged: 'Clockwork, Hollow and Stormfront run [8×] faster.' },
+  { id: 'bright', cost: 2, name: 'Bright sky', text: 'Starlight ×10.', charged: 'Starlight [×1,000].' },
+  { id: 'cheap', cost: 2, name: 'Thin pages', text: 'Atlas upgrades cost 10× less.', charged: 'Atlas upgrades cost [1,000×] less.' },
+  { id: 'hands', cost: 2, name: 'Keepsakes', text: 'Keep every Hands upgrade and every upgrade that buys for you.', keeps: HANDS, charged: "Keep every Hands upgrade, every upgrade that buys for you [and every world's Starlit upgrade]." },
+  { id: 'auto_atlas', cost: 2, name: 'Cartographer', text: 'Buys Atlas upgrades automatically, cheapest first.', charged: 'Buys Atlas upgrades automatically, cheapest first, [without spending starlight].' },
 
-  { id: 'routes', cost: 5, name: 'Old roads', text: 'Keep every route.', keeps: ROUTES, charged: "Also every world's main resource ×1,000." },
-  { id: 'passive', cost: 5, name: 'Steady hands', text: 'Keep the upgrades that gain a reset currency every second.', keeps: PASSIVE, charged: 'They also gain 5× as much.' },
-  { id: 'scar', cost: 5, name: 'Scorch marks', text: "Keep Stormfront's strikes on older worlds.", charged: 'Those strikes also count to a power 2 higher.' },
+  { id: 'routes', cost: 5, name: 'Old roads', text: 'Keep every route.', keeps: ROUTES, charged: "Keep every route. [Every world's main resource ×1,000.]" },
+  { id: 'passive', cost: 5, name: 'Steady hands', text: 'Keep the upgrades that gain a reset currency every second.', keeps: PASSIVE, charged: 'Keep the upgrades that gain a reset currency every second. [They gain 5× as much.]' },
+  { id: 'scar', cost: 5, name: 'Scorch marks', text: "Keep Stormfront's strikes on older worlds.", charged: "Keep Stormfront's strikes on older worlds. [They count to a power 2 higher.]" },
   // Dearer than the Cartographer because it only pays once worlds rebuild
   // quickly: early on, a folded world takes an hour to shine again.
-  { id: 'auto_fold', cost: 5, name: 'Bookbinder', text: 'Folds a world automatically once it has gathered as much starlight as it has given this Eclipse.', charged: 'Every fold also gathers 10× the starlight.' },
+  { id: 'auto_fold', cost: 5, name: 'Bookbinder', text: 'Folds a world automatically once it has gathered as much starlight as it has given this Eclipse.', charged: 'Folds a world automatically once it has gathered as much starlight as it has given this Eclipse. [Each fold gathers 10× the starlight.]' },
 
-  { id: 'umbra', cost: 12, name: 'Umbra', text: 'Every world runs 2× faster.', pace: [ALL, 2], more: 1.5, charged: '3× faster.' },
-  { id: 'blaze', cost: 12, name: 'Diamond ring', text: 'Starlight ×100.', charged: 'Starlight ×100,000.' },
+  { id: 'umbra', cost: 12, name: 'Umbra', text: 'Every world runs 2× faster.', pace: [ALL, 2], more: 1.5, charged: 'Every world runs [3×] faster.' },
+  { id: 'blaze', cost: 12, name: 'Diamond ring', text: 'Starlight ×100.', charged: 'Starlight [×100,000].' },
 ];
 const UP_BY_ID = Object.fromEntries(UPGRADES.map((u) => [u.id, u]));
 

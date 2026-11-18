@@ -1,6 +1,6 @@
 // Pieces of the page that more than one world uses.
 import { h, setText, setShown, setClass, setDisabled } from './dom.js';
-import { Decimal, format, formatDown, formatInt } from '../core/num.js';
+import { Decimal, format, formatInt } from '../core/num.js';
 
 export function setWidth(el, frac) {
   const w = (Math.max(0, Math.min(1, frac || 0)) * 100).toFixed(1) + '%';
@@ -197,14 +197,22 @@ export function breakdown(title, labels, totalLabel) {
   };
 }
 
-export function shineNotice(name) {
-  const text = h('p', {});
-  const el = h('div', { class: 'notice' }, h('h3', {}, `${name} is shining`), text);
+/**
+ * A stat for a world's top strip, shown only while the world is shining: the
+ * starlight it gathers a minute. Clicking it opens the Atlas, where worlds fold.
+ * prefix is the world's strip class prefix ('cd', 'tw', ...).
+ */
+export function shineStat(prefix, game) {
+  const rate = h('b');
+  const el = h('button', {
+    class: `${prefix}-stat shine-stat`, title: 'Open the Atlas',
+    onclick: () => { game.state.ui.tab = 'atlas'; game.state.ui.visited.atlas = true; },
+  }, rate, h('span', {}, 'starlight per minute'));
   return {
     el,
     set(shine, pending, pace = 1) {
       setShown(el, shine > 0);
-      if (shine > 0) setText(text, `${format(real(shine, pace), 2)} starlight per minute. ${formatDown(pending)} gathered since the last fold. Fold in the Atlas.`);
+      if (shine > 0) setText(rate, format(real(shine, pace), 2));
     },
   };
 }

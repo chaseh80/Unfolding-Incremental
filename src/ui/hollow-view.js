@@ -1,7 +1,7 @@
 // Everything you see while looking at Hollow.
 import { h, setText, setShown, setClass, setDisabled, confirmBox } from './dom.js';
 import { format, formatInt, formatMult, formatTime } from '../core/num.js';
-import { upgradeGrid, subTabs, pointList, resetBox, breakdown, shineNotice, real } from './parts.js';
+import { upgradeGrid, subTabs, pointList, resetBox, breakdown, shineStat, real } from './parts.js';
 import { f0, attr, showSvg, dec, rng, makeScene, mainBar } from './scene.js';
 import * as hollow from '../worlds/hollow.js';
 import { paceMult } from '../worlds/links.js';
@@ -251,13 +251,13 @@ export function buildHollow(game) {
   }
 
   const sources = breakdown('Crystal sources', ['Lattice', 'Facets', 'Geodes', 'Chambers', 'Other'], 'Crystal per second');
-  const shine = shineNotice('Hollow');
+  const shine = shineStat('ho', game);
+  strip.insertBefore(shine.el, speedText);
 
-  const cavePanel = h('div', { class: 'panel crystal-accent' }, scene, shine.el,
+  const cavePanel = h('div', { class: 'panel crystal-accent' }, scene,
     facetBox, latticeBox, caveCollapse.el, sources.el);
 
   function updateCave(c, d) {
-    shine.set(d.shine, c.pending, pace());
     updateScene(c, d);
     updateMain(c, d);
     setShown(facetBox, c.open);
@@ -333,6 +333,7 @@ export function buildHollow(game) {
     const c = H();
     const d = hollow.calc(S());
     updateStrip(c, d);
+    shine.set(d.shine, c.pending, pace());
     tabs.update((tab) => tab.open(c)).update(c, d);
   }
 
